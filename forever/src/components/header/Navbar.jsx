@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { assets } from "../../assets/assets";
+import SearchBar from "../share/SearchBar.jsx";
 
 const NavLinks = [
   {
@@ -153,6 +154,7 @@ const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     if (!isProfileOpen) return;
@@ -196,11 +198,18 @@ const Navbar = () => {
           </ul>
         </nav>
         <div className="flex items-center gap-4">
-          <img
-            src={assets.search_icon}
-            alt="search"
-            className="size-5 cursor-pointer"
-          />
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Open search"
+            className="inline-flex items-center justify-center rounded-lg p-0.5 text-gray-900 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20"
+          >
+            <img
+              src={assets.search_icon}
+              alt=""
+              className="size-5 cursor-pointer"
+            />
+          </button>
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
@@ -279,6 +288,8 @@ const Navbar = () => {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
+
+      <SearchBar isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 };

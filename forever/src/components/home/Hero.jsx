@@ -1,7 +1,7 @@
 import { assets } from "../../assets/assets.js";
 const Hero = () => {
   return (
-    <section className="flex flex-col border border-gray-400 items-center justify-center sm:flex-row">
+    <section className="flex flex-col border border-gray-400 items-center justify-center sm:flex-row max-w-7xl mx-auto">
       {/* left side */}
       <div className="w-full sm:w-1/2 flex items-center justify-center py-10 sm:py-0">
         <div className=" text-[#414141]">

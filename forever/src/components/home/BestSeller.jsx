@@ -12,7 +12,7 @@ const BestSeller = () => {
   }, [products]);
 
   return (
-    <section className="my-12">
+    <section className="my-12 max-w-7xl mx-auto">
       <div className="mb-6">
         <Title title1="Best " title2="Sellers" />
         <p className="text-sm text-gray-500 text-center">

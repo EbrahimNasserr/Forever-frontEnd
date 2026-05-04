@@ -8,20 +8,20 @@ const OurPolicy = () => {
       description: "We offer hassle free exchange policy",
     },
     {
-      icon: assets.quality_icon_icon,
+      icon: assets.quality_icon,
       title: "7 Days Return Policy",
       description: "We provide 7 days free return policy",
     },
     {
-      icon: assets.support_img_icon,
+      icon: assets.support_img,
       title: "Best customer support",
       description: "We provide 24/7 customer support",
     },
   ];
 
   return (
-    <section className="my-12">
-      <div className="flex flex-col sm-flex-row justify-around gap-12 sm-gap-2 text-center py-12 text-xs sm:text-sm md:text-base text-gray-700">
+    <section className="my-12 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-around gap-12 sm-gap-2 text-center py-12 text-xs sm:text-sm md:text-base text-gray-700">
         {policies.map((policy) => (
           <div key={policy.title}>
             <img
