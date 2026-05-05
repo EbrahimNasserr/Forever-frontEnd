@@ -8,6 +8,7 @@ import Cart from "./pages/Cart.jsx";
 import PlaceOrder from "./pages/PlaceOrder.jsx";
 import Orders from "./pages/Orders.jsx";
 import Login from "./pages/auth/Login.jsx";
+import SignUp from "./pages/auth/SignUp.jsx";
 import Navbar from "./components/header/Navbar.jsx";
 import Footer from "./components/footer/Footer.jsx";
 import { ToastContainer } from "react-toastify";
@@ -31,6 +32,7 @@ const App = () => {
           <Route path="/place-order" element={<PlaceOrder />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
         </Routes>
       </main>
       <Footer />
