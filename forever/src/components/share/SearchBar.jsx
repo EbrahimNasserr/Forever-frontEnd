@@ -7,6 +7,7 @@ const SearchBar = ({ isOpen, onClose }) => {
   const products = useSelector((state) => state.products.items);
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
+  const panelRef = useRef(null);
 
   const handleClose = useCallback(() => {
     setQuery("");
@@ -26,6 +27,16 @@ const SearchBar = ({ isOpen, onClose }) => {
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, handleClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPointerDown = (e) => {
+      if (!panelRef.current) return;
+      if (!panelRef.current.contains(e.target)) handleClose();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [isOpen, handleClose]);
 
   const filtered = useMemo(() => {
@@ -52,19 +63,14 @@ const SearchBar = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-60 flex justify-center p-4 pt-20 sm:pt-24"
+      className="absolute left-0 right-0 top-full z-50 flex justify-center px-4 pb-4"
       role="dialog"
-      aria-modal="true"
       aria-label="Search products"
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
-        aria-label="Close search"
-        onClick={handleClose}
-      />
-
-      <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-2xl ring-1 ring-black/5">
+      <div
+        ref={panelRef}
+        className="relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-2xl ring-1 ring-black/5"
+      >
         <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 sm:px-4">
           <Search className="size-5 shrink-0 text-gray-400" aria-hidden />
           <input

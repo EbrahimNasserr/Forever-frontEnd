@@ -179,117 +179,122 @@ const Navbar = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between py-5 font-medium">
-        <NavLink to="/">
-          <img src={assets.logo} alt="logo" className="w-24 h-auto" />
-        </NavLink>
-        <nav className="hidden sm:block">
-          <ul className="flex items-center gap-5 text-sm text-gray-500">
-            {NavLinks.map((link) => (
-              <li key={link.to}>
-                <NavLink className="flex items-center flex-col" to={link.to}>
-                  <span className="uppercase tracking-wider pb-1">
-                    {link.label}
-                  </span>
-                  <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Open search"
-            className="inline-flex items-center justify-center rounded-lg p-0.5 text-gray-900 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20"
-          >
-            <img
-              src={assets.search_icon}
-              alt=""
-              className="size-5 cursor-pointer"
-            />
-          </button>
-          <div className="relative" ref={profileMenuRef}>
+      <div className="relative">
+        <header className="flex items-center justify-between py-5 font-medium">
+          <NavLink to="/">
+            <img src={assets.logo} alt="logo" className="w-24 h-auto" />
+          </NavLink>
+          <nav className="hidden sm:block">
+            <ul className="flex items-center gap-5 text-sm text-gray-500">
+              {NavLinks.map((link) => (
+                <li key={link.to}>
+                  <NavLink className="flex items-center flex-col" to={link.to}>
+                    <span className="uppercase tracking-wider pb-1">
+                      {link.label}
+                    </span>
+                    <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={() => setIsProfileOpen((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={isProfileOpen}
-              className="inline-flex items-center justify-center"
+              onClick={() => setIsSearchOpen(true)}
+              aria-label="Open search"
+              className="inline-flex items-center justify-center rounded-lg p-0.5 text-gray-900 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20"
             >
               <img
-                src={assets.profile_icon}
-                alt="profile"
+                src={assets.search_icon}
+                alt=""
                 className="size-5 cursor-pointer"
               />
             </button>
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={isProfileOpen}
+                className="inline-flex items-center justify-center"
+              >
+                <img
+                  src={assets.profile_icon}
+                  alt="profile"
+                  className="size-5 cursor-pointer"
+                />
+              </button>
 
-            <div
-              className={[
-                "absolute right-0 top-7 z-50 min-w-44 origin-top-right rounded-xl border border-gray-200/60 bg-white/90 p-1 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150",
-                isProfileOpen
-                  ? "scale-100 opacity-100"
-                  : "pointer-events-none scale-95 opacity-0",
-              ].join(" ")}
-              role="menu"
-            >
-              <ul className="flex flex-col text-sm text-gray-700">
-                {ProfileDropdown.map((item) => (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      onClick={() => setIsProfileOpen(false)}
-                      className={({ isActive }) =>
-                        [
-                          "block w-full rounded-lg px-3 py-2 text-left transition-colors",
-                          "hover:bg-gray-100 hover:text-gray-900",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20",
-                          isActive
-                            ? "bg-gray-100 text-gray-900"
-                            : "text-gray-700",
-                        ].join(" ")
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
+              <div
+                className={[
+                  "absolute right-0 top-7 z-50 min-w-44 origin-top-right rounded-xl border border-gray-200/60 bg-white/90 p-1 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150",
+                  isProfileOpen
+                    ? "scale-100 opacity-100"
+                    : "pointer-events-none scale-95 opacity-0",
+                ].join(" ")}
+                role="menu"
+              >
+                <ul className="flex flex-col text-sm text-gray-700">
+                  {ProfileDropdown.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        onClick={() => setIsProfileOpen(false)}
+                        className={({ isActive }) =>
+                          [
+                            "block w-full rounded-lg px-3 py-2 text-left transition-colors",
+                            "hover:bg-gray-100 hover:text-gray-900",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20",
+                            isActive
+                              ? "bg-gray-100 text-gray-900"
+                              : "text-gray-700",
+                          ].join(" ")
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
+            <Link to="/cart" className="relative">
+              <img
+                src={assets.cart_icon}
+                alt="cart"
+                className="size-5 cursor-pointer"
+              />
+              <span className="absolute -bottom-3 leading-4 w-4 text-center aspect-square -right-3 bg-red-500 text-white text-xs rounded-full">
+                0
+              </span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={isSidebarOpen}
+              className="sm:hidden"
+            >
+              <img
+                src={assets.menu_icon}
+                alt="menu"
+                className="size-5 cursor-pointer"
+              />
+            </button>
           </div>
-          <Link to="/cart" className="relative">
-            <img
-              src={assets.cart_icon}
-              alt="cart"
-              className="size-5 cursor-pointer"
-            />
-            <span className="absolute -bottom-3 leading-4 w-4 text-center aspect-square -right-3 bg-red-500 text-white text-xs rounded-full">
-              0
-            </span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={isSidebarOpen}
-            className="sm:hidden"
-          >
-            <img
-              src={assets.menu_icon}
-              alt="menu"
-              className="size-5 cursor-pointer"
-            />
-          </button>
-        </div>
-      </header>
+        </header>
+
+        <SearchBar
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      </div>
 
       <MobileSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
-
-      <SearchBar isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 };
