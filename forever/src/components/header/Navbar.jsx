@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { assets } from "../../assets/assets";
 import SearchBar from "../share/SearchBar.jsx";
 
@@ -150,11 +151,16 @@ const MobileSidebar = ({ isOpen, onClose }) => {
   );
 };
 
-const Navbar = () => {
+const Navbar = ({ onOpenCart }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const cartCount = useSelector((state) =>
+    Array.isArray(state.products.cart)
+      ? state.products.cart.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0)
+      : 0
+  );
 
   useEffect(() => {
     if (!isProfileOpen) return;
@@ -259,16 +265,21 @@ const Navbar = () => {
                 </ul>
               </div>
             </div>
-            <Link to="/cart" className="relative">
+            <button
+              type="button"
+              onClick={onOpenCart}
+              className="relative"
+              aria-label="Open cart sidebar"
+            >
               <img
                 src={assets.cart_icon}
                 alt="cart"
                 className="size-5 cursor-pointer"
               />
               <span className="absolute -bottom-3 leading-4 w-4 text-center aspect-square -right-3 bg-red-500 text-white text-xs rounded-full">
-                0
+                {cartCount}
               </span>
-            </Link>
+            </button>
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}

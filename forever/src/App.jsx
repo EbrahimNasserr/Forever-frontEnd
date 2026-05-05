@@ -10,10 +10,16 @@ import Orders from "./pages/Orders.jsx";
 import Login from "./pages/auth/Login.jsx";
 import Navbar from "./components/header/Navbar.jsx";
 import Footer from "./components/footer/Footer.jsx";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useState } from "react";
+import CartSidebar from "./components/cart/CartSidebar.jsx";
 const App = () => {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   return (
     <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
-      <Navbar />
+      <Navbar onOpenCart={() => setIsCartOpen(true)} />
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -28,6 +34,17 @@ const App = () => {
         </Routes>
       </main>
       <Footer />
+      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <ToastContainer
+        position="top-right"
+        autoClose={1800}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+      />
     </div>
   );
 };

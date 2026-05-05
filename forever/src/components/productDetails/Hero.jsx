@@ -1,20 +1,25 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
 import { Star } from "lucide-react";
+import { toast } from "react-toastify";
 import ErrorState from "../share/ErrorState.jsx";
 import ProductDetailsSkeleton from "../share/ProductDetailsSkeleton.jsx";
 import Reviews from "./Reviews.jsx";
 import RelatedProducts from "./RelatedProducts.jsx";
+import { addToCart } from "../../store/productsSlice.js";
 
 const ProductDetails = ({ productId }) => {
   const params = useParams();
   const id = productId ?? params?.id;
+  const dispatch = useDispatch();
   const products = useSelector((state) => state.products.items);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [activeTab, setActiveTab] = useState("description");
+  const cart = useSelector((state) => state.products.cart);
+  console.log(cart);
 
   const product = useMemo(() => {
     if (!id) return null;
@@ -210,18 +215,25 @@ const ProductDetails = ({ productId }) => {
           ) : null}
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              to="/cart"
-              className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+            <button
+              type="button"
+              onClick={() =>
+                {
+                  dispatch(
+                    addToCart({
+                      productId: product?._id,
+                      size: displaySize,
+                      quantity: 1,
+                      product,
+                    })
+                  );
+                  toast.success(`${product?.name} added to cart`);
+                }
+              }
+              className="inline-flex cursor-pointer uppercase items-center justify-center bg-gray-900 px-8 py-3 text-sm font-medium text-white hover:bg-gray-800"
             >
-              Go to cart
-            </Link>
-            <Link
-              to="/collection"
-              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              Continue shopping
-            </Link>
+              add to cart
+            </button>
           </div>
           <div className="mt-5 flex flex-col gap-2 text-sm text-gray-500 border-t-2 pt-4">
             <p>100% Original product.</p>
