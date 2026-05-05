@@ -1,12 +1,12 @@
 import { useParams } from "react-router-dom";
-import ProductDetails from "../components/productDetails/ProductDetails.jsx";
+import Hero from "../components/productDetails/Hero.jsx";
 
 const Product = () => {
   const { id } = useParams();
 
   return (
     <div>
-      <ProductDetails key={id} productId={id} />
+      <Hero key={id} productId={id} />
     </div>
   );
 };

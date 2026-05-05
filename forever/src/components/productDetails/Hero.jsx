@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Star } from "lucide-react";
 import ErrorState from "../share/ErrorState.jsx";
 import ProductDetailsSkeleton from "../share/ProductDetailsSkeleton.jsx";
+import Reviews from "./Reviews.jsx";
+import RelatedProducts from "./RelatedProducts.jsx";
 
 const ProductDetails = ({ productId }) => {
   const params = useParams();
@@ -12,6 +14,7 @@ const ProductDetails = ({ productId }) => {
   const products = useSelector((state) => state.products.items);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
+  const [activeTab, setActiveTab] = useState("description");
 
   const product = useMemo(() => {
     if (!id) return null;
@@ -220,8 +223,82 @@ const ProductDetails = ({ productId }) => {
               Continue shopping
             </Link>
           </div>
+          <div className="mt-5 flex flex-col gap-2 text-sm text-gray-500 border-t-2 pt-4">
+            <p>100% Original product.</p>
+            <p>Cash on delivery is available on this product.</p>
+            <p>Easy return and exchange policy within 7 days.</p>
+          </div>
         </div>
       </div>
+
+      <div className="mt-10">
+        <div className="flex items-center gap-2 border-b border-gray-200">
+          {[
+            { id: "description", label: "Description" },
+            { id: "reviews", label: "Reviews" },
+          ].map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveTab(t.id)}
+                className={[
+                  "relative -mb-px rounded-t-xl px-4 py-3 text-sm font-semibold transition-colors",
+                  isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-900",
+                ].join(" ")}
+                aria-pressed={isActive}
+              >
+                {t.label}
+                {isActive ? (
+                  <motion.span
+                    layoutId="product-details-tab-underline"
+                    className="absolute inset-x-2 bottom-0 h-0.5 rounded bg-gray-900"
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="pt-6">
+          <AnimatePresence mode="wait" initial={false}>
+            {activeTab === "description" ? (
+              <motion.div
+                key="description"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
+                  <p className="text-sm leading-7 text-gray-600 whitespace-pre-line">
+                    {product?.description ||
+                      "No description is available for this product yet."}
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="reviews"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <Reviews ratingValue={ratingValue} ratingCount={ratingCount} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <RelatedProducts
+        currentProductId={product?._id}
+        category={product?.category}
+        subCategory={product?.subCategory}
+      />
     </div>
   );
 };
