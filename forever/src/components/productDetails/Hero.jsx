@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { toast } from "react-toastify";
@@ -9,30 +8,24 @@ import ProductDetailsSkeleton from "../share/ProductDetailsSkeleton.jsx";
 import Reviews from "./Reviews.jsx";
 import RelatedProducts from "./RelatedProducts.jsx";
 import { useCart } from "../../features/cart/useCart";
+import { useGetProductByIdQuery } from "../../features/products/productsApi";
 
 const ProductDetails = ({ productId }) => {
   const params = useParams();
   const id = productId ?? params?.id;
   const { add } = useCart();
-  const products = useSelector((state) => state.products.items);
+  const { data: product, isLoading } = useGetProductByIdQuery(id, { skip: !id });
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [activeTab, setActiveTab] = useState("description");
-  // Cart is managed by the cart feature (guest: Redux+localStorage, authed: RTK Query)
-
-  const product = useMemo(() => {
-    if (!id) return null;
-    if (!Array.isArray(products)) return null;
-    return products.find((p) => String(p?._id) === String(id)) ?? null;
-  }, [products, id]);
 
   const images = useMemo(() => {
-    const imgs = product?.image;
+    const imgs = product?.image ?? product?.images;
     return Array.isArray(imgs) ? imgs.filter(Boolean) : [];
   }, [product]);
 
   const sizes = useMemo(() => {
-    const s = product?.sizes;
+    const s = product?.sizes ?? product?.size;
     return Array.isArray(s) ? s.filter(Boolean) : [];
   }, [product]);
 
@@ -72,7 +65,7 @@ const ProductDetails = ({ productId }) => {
     );
   }
 
-  if (!Array.isArray(products)) {
+  if (isLoading) {
     return <ProductDetailsSkeleton />;
   }
 
@@ -216,17 +209,15 @@ const ProductDetails = ({ productId }) => {
           <div className="mt-7 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() =>
-                {
-                  add({
-                    productId: product?._id,
-                    size: displaySize,
-                    quantity: 1,
-                    product,
-                  });
-                  toast.success(`${product?.name} added to cart`);
-                }
-              }
+              onClick={() => {
+                add({
+                  productId: product?._id,
+                  size: displaySize,
+                  quantity: 1,
+                  product,
+                });
+                toast.success(`${product?.name} added to cart`);
+              }}
               className="inline-flex cursor-pointer uppercase items-center justify-center bg-gray-900 px-8 py-3 text-sm font-medium text-white hover:bg-gray-800"
             >
               add to cart
@@ -254,7 +245,9 @@ const ProductDetails = ({ productId }) => {
                 onClick={() => setActiveTab(t.id)}
                 className={[
                   "relative -mb-px rounded-t-xl px-4 py-3 text-sm font-semibold transition-colors",
-                  isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-900",
+                  isActive
+                    ? "text-gray-900"
+                    : "text-gray-500 hover:text-gray-900",
                 ].join(" ")}
                 aria-pressed={isActive}
               >

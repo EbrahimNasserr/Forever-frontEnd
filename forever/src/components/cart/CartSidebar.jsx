@@ -7,35 +7,44 @@ import { useCart } from "../../features/cart/useCart";
 
 const CartSidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { items: cart, isAuthenticated, remove, setQuantity } = useCart();
+  const { items: cart, isAuthenticated, summary, remove, setQuantity } = useCart();
   const products = useSelector((state) => state.products.items);
   const cartItems = useMemo(() => {
     if (!Array.isArray(cart)) return [];
     return cart
       .map((item) => {
-        const productId = item.productId ?? item.product?._id ?? item.productId;
+        const productId = item.productId ?? item.product?._id ?? item.product;
         const product = Array.isArray(products)
           ? products.find((p) => String(p?._id) === String(productId))
           : null;
-        const data = product ?? item.product;
+        const data = item.product ?? product ?? null;
         if (!data) return null;
+        const unitPrice = Number(item.price ?? data.price) || 0;
         return {
           ...item,
-          product: data,
-          lineTotal: (Number(data.price) || 0) * (Number(item.quantity) || 0),
+          product: {
+            ...data,
+            image:
+              Array.isArray(data.image) && data.image.length
+                ? data.image
+                : typeof item.image === "string"
+                  ? [item.image]
+                  : [],
+            name: data.name ?? item.name ?? "",
+            price: unitPrice,
+          },
+          productId,
+          lineTotal: unitPrice * (Number(item.quantity) || 0),
         };
       })
       .filter(Boolean);
   }, [cart, products]);
 
-  const subtotal = useMemo(
-    () => cartItems.reduce((sum, i) => sum + i.lineTotal, 0),
-    [cartItems]
-  );
+  const subtotal = Number(summary?.subtotal) || 0;
 
   const itemCount = useMemo(
     () => cartItems.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0),
-    [cartItems]
+    [cartItems],
   );
 
   const goToCart = () => {

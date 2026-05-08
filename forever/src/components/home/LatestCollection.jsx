@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSelector } from "react-redux";
 import { animate, motion, useMotionValue } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Title from "../share/Title.jsx";
 import ProductItem from "../share/ProductItem.jsx";
+import { useGetAllProductsQuery } from "../../features/products/productsApi";
 
 const LatestCollection = () => {
-  const products = useSelector((state) => state.products.items);
+  const { data: products = [] } = useGetAllProductsQuery();
   const containerRef = useRef(null);
   const [width, setWidth] = useState(0);
   const x = useMotionValue(0);
@@ -38,7 +38,8 @@ const LatestCollection = () => {
     const containerWidth = containerRef.current?.offsetWidth || 0;
     const scrollAmount = containerWidth * 0.8;
 
-    let newX = direction === "left" ? currentX + scrollAmount : currentX - scrollAmount;
+    let newX =
+      direction === "left" ? currentX + scrollAmount : currentX - scrollAmount;
     newX = Math.max(Math.min(newX, 0), -width);
 
     animate(x, newX, {

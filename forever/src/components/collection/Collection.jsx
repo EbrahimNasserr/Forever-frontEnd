@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useSelector } from "react-redux";
 import ProductItem from "../share/ProductItem.jsx";
+import { useGetAllProductsQuery } from "../../features/products/productsApi";
 
 const CATEGORY_OPTIONS = ["Men", "Women", "Kids"];
 const TYPE_OPTIONS = ["Topwear", "Bottomwear", "Winterwear"];
@@ -12,7 +12,7 @@ const SORT_OPTIONS = [
 ];
 
 const Collection = () => {
-  const products = useSelector((state) => state.products.items);
+  const { data: products = [] } = useGetAllProductsQuery();
   const [categories, setCategories] = useState(new Set());
   const [types, setTypes] = useState(new Set());
   const [sortBy, setSortBy] = useState("relevant");

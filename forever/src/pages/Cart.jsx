@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Minus, Plus, Trash2 } from "lucide-react";
@@ -5,27 +6,91 @@ import { toast } from "react-toastify";
 import { useCart } from "../features/cart/useCart";
 
 const Cart = () => {
-  const { items: cart, isAuthenticated, clear, remove, setQuantity } = useCart();
+  const {
+    items: cart,
+    isAuthenticated,
+    summary,
+    clear,
+    remove,
+    setQuantity,
+  } = useCart();
   const products = useSelector((state) => state.products.items);
   const items = (Array.isArray(cart) ? cart : [])
     .map((item) => {
-      const productId = item.productId ?? item.product?._id ?? item.productId;
+      const productId = item.productId ?? item.product?._id ?? item.product;
       const product = Array.isArray(products)
         ? products.find((p) => String(p?._id) === String(productId))
         : null;
-      const data = product ?? item.product;
+      const data = item.product ?? product ?? null;
       if (!data) return null;
+      const unitPrice = Number(item.price ?? data.price) || 0;
       return {
         ...item,
-        product: data,
-        lineTotal: (Number(data.price) || 0) * (Number(item.quantity) || 0),
+        product: {
+          ...data,
+          image:
+            Array.isArray(data.image) && data.image.length
+              ? data.image
+              : typeof item.image === "string"
+                ? [item.image]
+                : [],
+          name: data.name ?? item.name ?? "",
+          price: unitPrice,
+        },
+        productId,
+        lineTotal: unitPrice * (Number(item.quantity) || 0),
       };
     })
     .filter(Boolean);
 
-  const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0);
-  const shipping = items.length ? 10 : 0;
-  const total = subtotal + shipping;
+  const subtotal = Number(summary?.subtotal) || 0;
+  const shipping = Number(summary?.shipping) || 0;
+  const total = Number(summary?.total) || subtotal + shipping;
+  const [quantityDrafts, setQuantityDrafts] = useState({});
+  const debouncedTimersRef = useRef({});
+
+  const queueQuantityUpdate = (item, nextQuantity, key, showSuccessText = "Quantity updated") => {
+    if (debouncedTimersRef.current[key]) {
+      window.clearTimeout(debouncedTimersRef.current[key]);
+    }
+
+    debouncedTimersRef.current[key] = window.setTimeout(async () => {
+      try {
+        await setQuantity({
+          cartItem: item,
+          productId: item.productId,
+          size: item.size,
+          quantity: nextQuantity,
+        });
+        toast.success(showSuccessText);
+      } catch (err) {
+        const message = err?.data?.message || err?.message || "Failed to update quantity";
+        toast.error(message);
+      }
+    }, 500);
+  };
+
+  const flushQuantityUpdate = async (item, key) => {
+    if (debouncedTimersRef.current[key]) {
+      window.clearTimeout(debouncedTimersRef.current[key]);
+    }
+    const raw = quantityDrafts[key];
+    const parsed = Number(raw);
+    const nextQuantity = Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : 1;
+    setQuantityDrafts((prev) => ({ ...prev, [key]: String(nextQuantity) }));
+    try {
+      await setQuantity({
+        cartItem: item,
+        productId: item.productId,
+        size: item.size,
+        quantity: nextQuantity,
+      });
+      toast.success("Quantity updated");
+    } catch (err) {
+      const message = err?.data?.message || err?.message || "Failed to update quantity";
+      toast.error(message);
+    }
+  };
 
   return (
     <section className="mx-auto max-w-6xl py-8 sm:py-12">
@@ -64,7 +129,7 @@ const Cart = () => {
           <div className="space-y-4">
             {items.map((item) => (
               <div
-                key={`${item.productId}-${item.size}`}
+                key={`${item.productId}-${item.size}-${item.color ?? ""}`}
                 className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
               >
                 <div className="flex gap-4">
@@ -91,41 +156,68 @@ const Cart = () => {
                 </div>
 
                 <div className="mt-4 flex items-center justify-between">
-                  <div className="inline-flex items-center rounded-xl border border-gray-200">
+                  {(() => {
+                    const itemKey = `${item.productId}-${item.size ?? ""}-${item.color ?? ""}`;
+                    const rawDraft = quantityDrafts[itemKey] ?? String(item.quantity ?? 1);
+                    const parsedDraft = Number(rawDraft);
+                    const safeDraft = Number.isFinite(parsedDraft)
+                      ? Math.max(1, Math.floor(parsedDraft))
+                      : 1;
+
+                    return (
+                      <div className="inline-flex items-center rounded-xl border border-gray-200">
                     <button
                       type="button"
-                      onClick={() =>
-                        setQuantity({
-                          cartItem: item,
-                          productId: item.productId,
-                          size: item.size,
-                          quantity: item.quantity - 1,
-                        }).then(() => toast.success("Quantity decreased"))
-                      }
+                      onClick={() => {
+                        const next = Math.max(1, safeDraft - 1);
+                        setQuantityDrafts((prev) => ({ ...prev, [itemKey]: String(next) }));
+                        queueQuantityUpdate(item, next, itemKey, "Quantity decreased");
+                      }}
                       className="p-2 text-gray-700 hover:bg-gray-50"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="size-4" />
                     </button>
-                    <span className="min-w-9 px-2 text-center text-sm font-semibold">
-                      {item.quantity}
-                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={rawDraft}
+                      onChange={(e) => {
+                        const nextRaw = e.target.value.replace(/[^\d]/g, "");
+                        setQuantityDrafts((prev) => ({ ...prev, [itemKey]: nextRaw }));
+                        const nextParsed = Number(nextRaw);
+                        if (!Number.isFinite(nextParsed) || nextParsed <= 0) return;
+                        queueQuantityUpdate(
+                          item,
+                          Math.max(1, Math.floor(nextParsed)),
+                          itemKey,
+                        );
+                      }}
+                      onBlur={() => flushQuantityUpdate(item, itemKey)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          flushQuantityUpdate(item, itemKey);
+                        }
+                      }}
+                      className="w-14 border-x border-gray-200 px-2 py-1 text-center text-sm font-semibold outline-none"
+                      aria-label="Quantity"
+                    />
                     <button
                       type="button"
-                      onClick={() =>
-                        setQuantity({
-                          cartItem: item,
-                          productId: item.productId,
-                          size: item.size,
-                          quantity: item.quantity + 1,
-                        }).then(() => toast.success("Quantity increased"))
-                      }
+                      onClick={() => {
+                        const next = safeDraft + 1;
+                        setQuantityDrafts((prev) => ({ ...prev, [itemKey]: String(next) }));
+                        queueQuantityUpdate(item, next, itemKey, "Quantity increased");
+                      }}
                       className="p-2 text-gray-700 hover:bg-gray-50"
                       aria-label="Increase quantity"
                     >
                       <Plus className="size-4" />
                     </button>
                   </div>
+                    );
+                  })()}
 
                   <button
                     type="button"

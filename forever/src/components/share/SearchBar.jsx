@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useGetAllProductsQuery } from "../../features/products/productsApi";
 
 const SearchBar = ({ isOpen, onClose }) => {
-  const products = useSelector((state) => state.products.items);
+  const { data: products = [] } = useGetAllProductsQuery();
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
   const panelRef = useRef(null);

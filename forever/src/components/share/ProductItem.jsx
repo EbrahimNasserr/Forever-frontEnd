@@ -10,7 +10,7 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 
-  const image = product?.image?.[0] ?? "";
+  const image = product?.image?.[0] ?? product?.images?.[0] ?? "";
   const name = product?.name ?? "Product";
   const description = product?.description ?? "";
   const price = Number(product?.price) || 0;
@@ -43,7 +43,10 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
       }}
       className={["group", className].join(" ")}
     >
-      <motion.div whileHover={{ y: -6 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+      <motion.div
+        whileHover={{ y: -6 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+      >
         <div className="relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white shadow-sm transition-all duration-300 hover:border-gray-900/20 hover:shadow-xl">
           <div className="relative h-56 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
             <motion.div
@@ -56,7 +59,12 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
                 aria-label={name}
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                <img src={image} alt={name} className="h-full w-full object-cover" loading="lazy" />
+                <img
+                  src={image}
+                  alt={name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
               </Link>
             </motion.div>
 
@@ -70,7 +78,11 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
               className="absolute right-4 top-4 rounded-full bg-gray-900/90 px-3 py-1 text-xs font-semibold text-white"
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: Math.min(0.6, safeIndex * 0.06 + 0.2), type: "spring", stiffness: 220 }}
+              transition={{
+                delay: Math.min(0.6, safeIndex * 0.06 + 0.2),
+                type: "spring",
+                stiffness: 220,
+              }}
             >
               New
             </motion.div>
@@ -91,7 +103,9 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
                   {name}
                 </Link>
               </motion.h3>
-              <p className="line-clamp-2 text-xs text-gray-500">{description}</p>
+              <p className="line-clamp-2 text-xs text-gray-500">
+                {description}
+              </p>
             </div>
 
             <motion.div
@@ -104,7 +118,9 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
             </motion.div>
 
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-medium text-gray-500">Quantity</span>
+              <span className="text-xs font-medium text-gray-500">
+                Quantity
+              </span>
               <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-1 ring-1 ring-gray-200/70">
                 <motion.button
                   type="button"
@@ -149,7 +165,9 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
               onPointerDown={(e) => e.stopPropagation()}
               className={[
                 "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
-                isAdded ? "bg-green-600 text-white" : "bg-gray-900 text-white hover:bg-black",
+                isAdded
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-900 text-white hover:bg-black",
               ].join(" ")}
             >
               <motion.span

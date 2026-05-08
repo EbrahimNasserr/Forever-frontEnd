@@ -11,9 +11,14 @@ export const selectIsAuthenticated = (state) => Boolean(state.auth?.isAuthentica
 
 export const selectServerCartResult = cartApi.endpoints.getCart.select();
 
+export const selectServerCart = createSelector(
+  [selectServerCartResult],
+  (res) => res?.data ?? null
+);
+
 export const selectServerCartItems = createSelector([selectServerCartResult], (res) => {
   const data = res?.data;
-  const items = data?.items ?? data?.cartItems ?? data ?? null;
+  const items = data?.items ?? data?.cart?.items ?? data?.cartItems ?? data ?? null;
   return Array.isArray(items) ? items.filter(Boolean) : [];
 });
 
