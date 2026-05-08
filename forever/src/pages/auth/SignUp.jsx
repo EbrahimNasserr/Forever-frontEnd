@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { useRegisterMutation } from "../../store/api/authApi";
+import { setSession } from "../../store/authSlice";
+import { setAccessToken } from "../../store/tokenStorage";
+import { syncGuestCartAfterAuth } from "../../features/cart/syncGuestCart";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [register, { isLoading }] = useRegisterMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -21,10 +29,34 @@ const SignUp = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup submitted:", formData);
-    navigate("/");
+    const name = `${formData.firstName ?? ""} ${formData.lastName ?? ""}`.trim();
+
+    try {
+      const res = await register({
+        name,
+        email: formData.email,
+        password: formData.password,
+      }).unwrap();
+
+      const message = res?.message || "Account created successfully.";
+      const user = res?.user ?? null;
+      const token = res?.token ?? null;
+
+      if (token) setAccessToken(token);
+      dispatch(setSession({ user }));
+      dispatch(syncGuestCartAfterAuth());
+
+      toast.success(message);
+      navigate("/");
+    } catch (err) {
+      const msg =
+        err?.data?.message ||
+        err?.error ||
+        "Signup failed. Please try again.";
+      toast.error(msg);
+    }
   };
 
   return (
@@ -181,9 +213,10 @@ const SignUp = () => {
 
             <button
               type="submit"
-              className="w-full bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors"
+              className="w-full bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-60"
+              disabled={isLoading}
             >
-              Create Account
+              {isLoading ? "Creating..." : "Create Account"}
             </button>
           </form>
         </div>

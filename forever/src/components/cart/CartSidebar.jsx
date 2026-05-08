@@ -1,22 +1,21 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import { removeFromCart, setCartItemQuantity } from "../../store/productsSlice.js";
+import { useCart } from "../../features/cart/useCart";
 
 const CartSidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const { items: cart, isAuthenticated, remove, setQuantity } = useCart();
   const products = useSelector((state) => state.products.items);
-  const cart = useSelector((state) => state.products.cart);
-
   const cartItems = useMemo(() => {
     if (!Array.isArray(cart)) return [];
     return cart
       .map((item) => {
+        const productId = item.productId ?? item.product?._id ?? item.productId;
         const product = Array.isArray(products)
-          ? products.find((p) => String(p?._id) === String(item.productId))
+          ? products.find((p) => String(p?._id) === String(productId))
           : null;
         const data = product ?? item.product;
         if (!data) return null;
@@ -137,13 +136,12 @@ const CartSidebar = ({ isOpen, onClose }) => {
                             <button
                               type="button"
                               onClick={() =>
-                                dispatch(
-                                  setCartItemQuantity({
-                                    productId: item.productId,
-                                    size: item.size,
-                                    quantity: item.quantity - 1,
-                                  })
-                                )
+                                setQuantity({
+                                  cartItem: item,
+                                  productId: item.productId,
+                                  size: item.size,
+                                  quantity: item.quantity - 1,
+                                })
                               }
                               className="p-2 text-gray-700 hover:bg-gray-50"
                             >
@@ -155,13 +153,12 @@ const CartSidebar = ({ isOpen, onClose }) => {
                             <button
                               type="button"
                               onClick={() =>
-                                dispatch(
-                                  setCartItemQuantity({
-                                    productId: item.productId,
-                                    size: item.size,
-                                    quantity: item.quantity + 1,
-                                  })
-                                )
+                                setQuantity({
+                                  cartItem: item,
+                                  productId: item.productId,
+                                  size: item.size,
+                                  quantity: item.quantity + 1,
+                                })
                               }
                               className="p-2 text-gray-700 hover:bg-gray-50"
                             >
@@ -172,12 +169,11 @@ const CartSidebar = ({ isOpen, onClose }) => {
                           <button
                             type="button"
                             onClick={() =>
-                              dispatch(
-                                removeFromCart({
-                                  productId: item.productId,
-                                  size: item.size,
-                                })
-                              )
+                              remove({
+                                cartItem: item,
+                                productId: item.productId,
+                                size: item.size,
+                              })
                             }
                             className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
                           >
@@ -207,7 +203,7 @@ const CartSidebar = ({ isOpen, onClose }) => {
                       <Link
                         to="/place-order"
                         onClick={onClose}
-                        className="rounded-xl bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-gray-800"
+                        className={`rounded-xl bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-gray-800 ${!isAuthenticated ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
                         Checkout
                       </Link>

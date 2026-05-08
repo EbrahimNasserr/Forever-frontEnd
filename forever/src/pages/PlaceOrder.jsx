@@ -3,14 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { assets } from "../assets/assets";
 import { CreditCard, Truck } from "lucide-react";
-import { placeOrder } from "../store/productsSlice.js";
+import { placeOrder } from "../features/orders/ordersSlice";
 import { toast } from "react-toastify";
+import { useCart } from "../features/cart/useCart";
 
 const PlaceOrder = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const products = useSelector((state) => state.products.items);
-  const cart = useSelector((state) => state.products.cart);
+  const { items: cart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState("cod");
 
   const [form, setForm] = useState({
@@ -29,8 +30,9 @@ const PlaceOrder = () => {
     () =>
       (Array.isArray(cart) ? cart : [])
         .map((item) => {
+          const productId = item.productId ?? item.product?._id ?? item.productId;
           const product = Array.isArray(products)
-            ? products.find((p) => String(p?._id) === String(item.productId))
+            ? products.find((p) => String(p?._id) === String(productId))
             : null;
           const data = product ?? item.product;
           if (!data) return null;

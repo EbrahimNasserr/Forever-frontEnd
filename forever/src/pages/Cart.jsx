@@ -1,22 +1,17 @@
 import { Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import {
-  clearCart,
-  removeFromCart,
-  setCartItemQuantity,
-} from "../store/productsSlice.js";
 import { toast } from "react-toastify";
+import { useCart } from "../features/cart/useCart";
 
 const Cart = () => {
-  const dispatch = useDispatch();
+  const { items: cart, isAuthenticated, clear, remove, setQuantity } = useCart();
   const products = useSelector((state) => state.products.items);
-  const cart = useSelector((state) => state.products.cart);
-
   const items = (Array.isArray(cart) ? cart : [])
     .map((item) => {
+      const productId = item.productId ?? item.product?._id ?? item.productId;
       const product = Array.isArray(products)
-        ? products.find((p) => String(p?._id) === String(item.productId))
+        ? products.find((p) => String(p?._id) === String(productId))
         : null;
       const data = product ?? item.product;
       if (!data) return null;
@@ -46,7 +41,7 @@ const Cart = () => {
         {items.length ? (
           <button
             type="button"
-            onClick={() => dispatch(clearCart() ) && toast.success("Cart cleared")}
+            onClick={() => clear().then(() => toast.success("Cart cleared"))}
             className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             Clear cart
@@ -100,13 +95,12 @@ const Cart = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        dispatch(
-                          setCartItemQuantity({
-                            productId: item.productId,
-                            size: item.size,
-                            quantity: item.quantity - 1,
-                          })
-                        ) && toast.success("Quantity decreased")
+                        setQuantity({
+                          cartItem: item,
+                          productId: item.productId,
+                          size: item.size,
+                          quantity: item.quantity - 1,
+                        }).then(() => toast.success("Quantity decreased"))
                       }
                       className="p-2 text-gray-700 hover:bg-gray-50"
                       aria-label="Decrease quantity"
@@ -119,13 +113,12 @@ const Cart = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        dispatch(
-                          setCartItemQuantity({
-                            productId: item.productId,
-                            size: item.size,
-                            quantity: item.quantity + 1,
-                          })
-                        ) && toast.success("Quantity increased")
+                        setQuantity({
+                          cartItem: item,
+                          productId: item.productId,
+                          size: item.size,
+                          quantity: item.quantity + 1,
+                        }).then(() => toast.success("Quantity increased"))
                       }
                       className="p-2 text-gray-700 hover:bg-gray-50"
                       aria-label="Increase quantity"
@@ -137,12 +130,11 @@ const Cart = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      dispatch(
-                        removeFromCart({
-                          productId: item.productId,
-                          size: item.size,
-                        })
-                      ) && toast.success("Item removed from cart")
+                      remove({
+                        cartItem: item,
+                        productId: item.productId,
+                        size: item.size,
+                      }).then(() => toast.success("Item removed from cart"))
                     }
                     className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
                   >
@@ -176,7 +168,7 @@ const Cart = () => {
 
             <Link
               to="/place-order"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+              className={`mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800 ${!isAuthenticated ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               Proceed to checkout
             </Link>

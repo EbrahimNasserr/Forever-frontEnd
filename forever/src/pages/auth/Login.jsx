@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { useLoginMutation } from "../../store/api/authApi";
+import { setSession } from "../../store/authSlice";
+import { setAccessToken } from "../../store/tokenStorage";
+import { syncGuestCartAfterAuth } from "../../features/cart/syncGuestCart";
 
 const Pupil = ({
   size = 12,
@@ -118,11 +123,12 @@ const EyeBall = ({
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [login, { isLoading: isLoginLoading }] = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [mouseX, setMouseX] = useState(0);
   const [mouseY, setMouseY] = useState(0);
   const [isPurpleBlinking, setIsPurpleBlinking] = useState(false);
@@ -202,16 +208,26 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    try {
+      const res = await login({ email, password }).unwrap();
+      const message = res?.message || "Logged in successfully.";
+      const user = res?.user ?? null;
+      const token = res?.token ?? null;
 
-    if (email === "erik@gmail.com" && password === "1234") {
-      toast.success("Login successful! Welcome back.");
+      if (token) setAccessToken(token);
+      dispatch(setSession({ user }));
+      dispatch(syncGuestCartAfterAuth());
+
+      toast.success(message);
       navigate("/");
-    } else {
-      setError("Invalid email or password. Please try again.");
+    } catch (err) {
+      const msg =
+        err?.data?.message ||
+        err?.error ||
+        "Invalid email or password. Please try again.";
+      setError(msg);
+      toast.error(msg);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -606,9 +622,9 @@ const Login = () => {
             <button
               type="submit"
               className="w-full h-12 text-base font-medium rounded-xl bg-gray-900 text-white hover:bg-black disabled:opacity-60"
-              disabled={isLoading}
+              disabled={isLoginLoading}
             >
-              {isLoading ? "Signing in..." : "Log in"}
+              {isLoginLoading ? "Signing in..." : "Log in"}
             </button>
           </form>
 

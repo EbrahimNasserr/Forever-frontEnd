@@ -15,6 +15,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useState } from "react";
 import CartSidebar from "./components/cart/CartSidebar.jsx";
+import RequireAuth from "./components/auth/RequireAuth.jsx";
 const App = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -29,8 +30,22 @@ const App = () => {
           <Route path="/contact" element={<Contact />} />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/place-order" element={<PlaceOrder />} />
-          <Route path="/orders" element={<Orders />} />
+          <Route
+            path="/place-order"
+            element={
+              <RequireAuth>
+                <PlaceOrder />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <RequireAuth>
+                <Orders />
+              </RequireAuth>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
         </Routes>

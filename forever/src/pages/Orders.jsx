@@ -9,7 +9,7 @@ const formatDate = (value) => {
 };
 
 const Orders = () => {
-  const orders = useSelector((state) => state.products.orders);
+  const orders = useSelector((state) => state.orders.orders);
 
   return (
     <section className="mx-auto max-w-6xl py-8 sm:py-12">

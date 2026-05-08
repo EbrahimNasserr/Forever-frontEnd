@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { toast } from "react-toastify";
@@ -8,18 +8,17 @@ import ErrorState from "../share/ErrorState.jsx";
 import ProductDetailsSkeleton from "../share/ProductDetailsSkeleton.jsx";
 import Reviews from "./Reviews.jsx";
 import RelatedProducts from "./RelatedProducts.jsx";
-import { addToCart } from "../../store/productsSlice.js";
+import { useCart } from "../../features/cart/useCart";
 
 const ProductDetails = ({ productId }) => {
   const params = useParams();
   const id = productId ?? params?.id;
-  const dispatch = useDispatch();
+  const { add } = useCart();
   const products = useSelector((state) => state.products.items);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [activeTab, setActiveTab] = useState("description");
-  const cart = useSelector((state) => state.products.cart);
-  console.log(cart);
+  // Cart is managed by the cart feature (guest: Redux+localStorage, authed: RTK Query)
 
   const product = useMemo(() => {
     if (!id) return null;
@@ -219,14 +218,12 @@ const ProductDetails = ({ productId }) => {
               type="button"
               onClick={() =>
                 {
-                  dispatch(
-                    addToCart({
-                      productId: product?._id,
-                      size: displaySize,
-                      quantity: 1,
-                      product,
-                    })
-                  );
+                  add({
+                    productId: product?._id,
+                    size: displaySize,
+                    quantity: 1,
+                    product,
+                  });
                   toast.success(`${product?.name} added to cart`);
                 }
               }

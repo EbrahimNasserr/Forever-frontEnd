@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { assets } from "../../assets/assets";
 import SearchBar from "../share/SearchBar.jsx";
+import { getAccessToken } from "../../store/tokenStorage";
+import { selectCartCount } from "../../features/cart/cartSelectors";
 
 const NavLinks = [
   {
@@ -38,7 +40,7 @@ const ProfileDropdown = [
   },
 ];
 
-const MobileSidebar = ({ isOpen, onClose }) => {
+const MobileSidebar = ({ isOpen, onClose, isAuthenticated }) => {
   const sidebarRef = useRef(null);
 
   useEffect(() => {
@@ -127,10 +129,27 @@ const MobileSidebar = ({ isOpen, onClose }) => {
             Account
           </p>
           <nav className="flex flex-col">
-            {ProfileDropdown.map((item) => (
+            {isAuthenticated ? (
+              ProfileDropdown.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    [
+                      "mx-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                    ].join(" ")
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))
+            ) : (
               <NavLink
-                key={item.to}
-                to={item.to}
+                to="/login"
                 onClick={onClose}
                 className={({ isActive }) =>
                   [
@@ -141,9 +160,9 @@ const MobileSidebar = ({ isOpen, onClose }) => {
                   ].join(" ")
                 }
               >
-                {item.label}
+                Sign in
               </NavLink>
-            ))}
+            )}
           </nav>
         </div>
       </aside>
@@ -152,15 +171,24 @@ const MobileSidebar = ({ isOpen, onClose }) => {
 };
 
 const Navbar = ({ onOpenCart }) => {
+  const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const cartCount = useSelector((state) =>
-    Array.isArray(state.products.cart)
-      ? state.products.cart.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0)
-      : 0
-  );
+  const isAuthenticated = useSelector((state) => Boolean(state.auth?.isAuthenticated));
+  const token = getAccessToken();
+  const canShowProfile = Boolean(token) && isAuthenticated;
+  const cartCount = useSelector(selectCartCount);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!isProfileOpen) return;
@@ -185,7 +213,7 @@ const Navbar = ({ onOpenCart }) => {
 
   return (
     <>
-      <div className="relative">
+      <div className={`sticky top-0 z-50 ${isScrolled ? "bg-white" : ""}`}>
         <header className="flex items-center border-b border-gray-500 justify-between py-5 font-medium">
           <NavLink to="/">
             <img src={assets.logo} alt="logo" className="w-24 h-auto" />
@@ -217,54 +245,66 @@ const Navbar = ({ onOpenCart }) => {
                 className="size-5 cursor-pointer"
               />
             </button>
-            <div className="relative" ref={profileMenuRef}>
+            {canShowProfile ? (
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={isProfileOpen}
+                  aria-label="Open profile menu"
+                  className="inline-flex items-center justify-center"
+                >
+                  <img
+                    src={assets.profile_icon}
+                    alt="profile"
+                    className="size-5 cursor-pointer"
+                  />
+                </button>
+
+                <div
+                  className={[
+                    "absolute right-0 top-7 z-50 min-w-44 origin-top-right rounded-xl border border-gray-200/60 bg-white/90 p-1 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150",
+                    isProfileOpen
+                      ? "scale-100 opacity-100"
+                      : "pointer-events-none scale-95 opacity-0",
+                  ].join(" ")}
+                  role="menu"
+                >
+                  <ul className="flex flex-col text-sm text-gray-700">
+                    {ProfileDropdown.map((item) => (
+                      <li key={item.to}>
+                        <NavLink
+                          to={item.to}
+                          onClick={() => setIsProfileOpen(false)}
+                          className={({ isActive }) =>
+                            [
+                              "block w-full rounded-lg px-3 py-2 text-left transition-colors",
+                              "hover:bg-gray-100 hover:text-gray-900",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20",
+                              isActive
+                                ? "bg-gray-100 text-gray-900"
+                                : "text-gray-700",
+                            ].join(" ")
+                          }
+                        >
+                          {item.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={() => setIsProfileOpen((v) => !v)}
-                aria-haspopup="menu"
-                aria-expanded={isProfileOpen}
-                className="inline-flex items-center justify-center"
+                onClick={() => navigate("/login")}
+                aria-label="Sign in"
+                className="inline-flex items-center justify-center rounded-lg p-0.5 text-gray-900 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20"
               >
-                <img
-                  src={assets.profile_icon}
-                  alt="profile"
-                  className="size-5 cursor-pointer"
-                />
+                <img src={assets.profile_icon} alt="" className="size-5 cursor-pointer" />
               </button>
-
-              <div
-                className={[
-                  "absolute right-0 top-7 z-50 min-w-44 origin-top-right rounded-xl border border-gray-200/60 bg-white/90 p-1 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150",
-                  isProfileOpen
-                    ? "scale-100 opacity-100"
-                    : "pointer-events-none scale-95 opacity-0",
-                ].join(" ")}
-                role="menu"
-              >
-                <ul className="flex flex-col text-sm text-gray-700">
-                  {ProfileDropdown.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        onClick={() => setIsProfileOpen(false)}
-                        className={({ isActive }) =>
-                          [
-                            "block w-full rounded-lg px-3 py-2 text-left transition-colors",
-                            "hover:bg-gray-100 hover:text-gray-900",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20",
-                            isActive
-                              ? "bg-gray-100 text-gray-900"
-                              : "text-gray-700",
-                          ].join(" ")
-                        }
-                      >
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            )}
             <button
               type="button"
               onClick={onOpenCart}
@@ -305,6 +345,7 @@ const Navbar = ({ onOpenCart }) => {
       <MobileSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isAuthenticated={canShowProfile}
       />
     </>
   );
