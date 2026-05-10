@@ -13,10 +13,15 @@ import { useGetProductByIdQuery } from "../../features/products/productsApi";
 const ProductDetails = ({ productId }) => {
   const params = useParams();
   const id = productId ?? params?.id;
+
   const { add } = useCart();
-  const { data: product, isLoading } = useGetProductByIdQuery(id, { skip: !id });
+  const { data: product, isLoading } = useGetProductByIdQuery(id, {
+    skip: !id,
+  });
+
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [activeTab, setActiveTab] = useState("description");
 
   const images = useMemo(() => {
@@ -29,13 +34,32 @@ const ProductDetails = ({ productId }) => {
     return Array.isArray(s) ? s.filter(Boolean) : [];
   }, [product]);
 
+  const colors = useMemo(() => {
+    const c = product?.colors ?? product?.color;
+    return Array.isArray(c) ? c.filter(Boolean) : [];
+  }, [product]);
+
+  const subCategoryName = useMemo(() => {
+    if (!product?.category?.subCategories || !product?.subCategory) return "";
+
+    const subCat = product.category.subCategories.find(
+      (sc) => sc._id === product.subCategory || sc.slug === product.subCategory,
+    );
+
+    return subCat?.name ?? "";
+  }, [product]);
+
   const { ratingValue, ratingCount } = useMemo(() => {
     const rawValue =
       product?.rating ?? product?.stars ?? product?.ratingValue ?? null;
+
     const value = rawValue == null ? null : Number(rawValue);
+
     const countRaw =
       product?.ratingCount ?? product?.reviewsCount ?? product?.reviewCount;
+
     const count = countRaw == null ? null : Number(countRaw);
+
     return {
       ratingValue: Number.isFinite(value)
         ? Math.max(0, Math.min(5, value))
@@ -53,6 +77,28 @@ const ProductDetails = ({ productId }) => {
     if (selectedSize && sizes.includes(selectedSize)) return selectedSize;
     return sizes[0] ?? "";
   }, [selectedSize, sizes]);
+
+  const displayColor = useMemo(() => {
+    if (selectedColor && colors.includes(selectedColor)) return selectedColor;
+    return colors[0] ?? "";
+  }, [selectedColor, colors]);
+
+  const handleAddToCart = async () => {
+    try {
+      await add({
+        productId: product?._id,
+        size: displaySize,
+        color: displayColor,
+        quantity: 1,
+        product,
+      });
+      toast.success(`${product?.name} added to cart`);
+    } catch (err) {
+      toast.error(
+        err?.data?.message || err?.message || "Failed to add to cart",
+      );
+    }
+  };
 
   if (!id) {
     return (
@@ -139,12 +185,16 @@ const ProductDetails = ({ productId }) => {
 
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            {product?.category}
-            {product?.subCategory ? ` · ${product.subCategory}` : ""}
+            {product?.category?.name}
+            {product?.subCategory || subCategoryName
+              ? ` · ${product.category?.subCategory?.name ?? subCategoryName}`
+              : ""}
           </p>
+
           <h1 className="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">
             {product?.name}
           </h1>
+
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => {
@@ -162,20 +212,22 @@ const ProductDetails = ({ productId }) => {
                 );
               })}
             </div>
+
             <p className="text-sm text-gray-600">
               {ratingValue != null ? ratingValue.toFixed(1) : "No reviews yet"}
               {ratingCount != null ? ` · ${ratingCount} reviews` : ""}
             </p>
           </div>
+
           <p className="mt-3 text-xl font-semibold text-gray-900">
             ${product?.price}
           </p>
 
-          {product?.description && (
+          {product?.description ? (
             <p className="mt-5 whitespace-pre-line text-sm leading-6 text-gray-600">
               {product.description}
             </p>
-          )}
+          ) : null}
 
           {sizes.length ? (
             <div className="mt-7">
@@ -206,23 +258,47 @@ const ProductDetails = ({ productId }) => {
             </div>
           ) : null}
 
+          {colors.length ? (
+            <div className="mt-7">
+              <p className="text-sm font-semibold text-gray-900">
+                Select color
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {colors.map((c) => {
+                  const isActive = c === displayColor;
+                  return (
+                    <motion.button
+                      key={c}
+                      type="button"
+                      onClick={() => setSelectedColor(c)}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      style={{ backgroundColor: c }}
+                      className={[
+                        "rounded-full border px-4 py-4 text-sm font-semibold transition-colors capitalize",
+                        isActive
+                          ? "border-gray-900 bg-gray-900 text-white"
+                          : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
+                      ].join(" ")}
+                      aria-pressed={isActive}
+                    >
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div className="mt-7 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => {
-                add({
-                  productId: product?._id,
-                  size: displaySize,
-                  quantity: 1,
-                  product,
-                });
-                toast.success(`${product?.name} added to cart`);
-              }}
+              onClick={handleAddToCart}
               className="inline-flex cursor-pointer uppercase items-center justify-center bg-gray-900 px-8 py-3 text-sm font-medium text-white hover:bg-gray-800"
             >
               add to cart
             </button>
           </div>
+
           <div className="mt-5 flex flex-col gap-2 text-sm text-gray-500 border-t-2 pt-4">
             <p>100% Original product.</p>
             <p>Cash on delivery is available on this product.</p>

@@ -29,21 +29,21 @@ export function useCart() {
   const [clearServer] = useClearCartMutation();
 
   const add = useCallback(
-    async ({ productId, quantity = 1, size = "", product }) => {
+    async ({ productId, quantity = 1, size = "", color = "", product }) => {
       if (!productId) return;
       if (!isAuthenticated) {
-        dispatch(addItem({ productId, quantity, size, product }));
+        dispatch(addItem({ productId, quantity, size, color, product }));
         return;
       }
-      await addServer({ productId, quantity, size, color: product?.color ?? null }).unwrap();
+      await addServer({ productId, quantity, size, color }).unwrap();
     },
     [addServer, dispatch, isAuthenticated]
   );
 
   const setQuantity = useCallback(
-    async ({ cartItem, productId, size = "", quantity }) => {
+    async ({ cartItem, productId, size = "", color = "", quantity }) => {
       if (!isAuthenticated) {
-        dispatch(setItemQuantity({ productId, size, quantity }));
+        dispatch(setItemQuantity({ productId, size, color, quantity }));
         return;
       }
       const itemId = getServerItemId(cartItem);
@@ -57,16 +57,16 @@ export function useCart() {
         productId: resolvedProductId,
         quantity,
         size: size ?? cartItem?.size ?? "",
-        color: cartItem?.color,
+        color: color ?? cartItem?.color ?? "",
       }).unwrap();
     },
     [dispatch, isAuthenticated, updateServer]
   );
 
   const remove = useCallback(
-    async ({ cartItem, productId, size = "" }) => {
+    async ({ cartItem, productId, size = "", color = "" }) => {
       if (!isAuthenticated) {
-        dispatch(removeItem({ productId, size }));
+        dispatch(removeItem({ productId, size, color }));
         return;
       }
       const itemId = getServerItemId(cartItem);

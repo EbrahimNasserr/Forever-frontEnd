@@ -29,7 +29,7 @@ export const syncGuestCartAfterAuth = () => async (dispatch, getState) => {
     try {
       // fire-and-wait to keep backend consistent, then rely on refetch
       await dispatch(
-        cartApi.endpoints.addCartItem.initiate({ productId, quantity, size })
+        cartApi.endpoints.addCartItem.initiate({ productId, quantity, size, color })
       ).unwrap();
     } catch {
       // best-effort sync: continue syncing remaining items

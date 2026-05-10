@@ -14,6 +14,11 @@ const normalizeProduct = (product) => {
       : Array.isArray(product.size)
         ? product.size
         : [],
+    colors: Array.isArray(product.colors)
+      ? product.colors
+      : Array.isArray(product.color)
+        ? product.color
+        : [],
     bestseller:
       typeof product.bestseller === "boolean"
         ? product.bestseller
@@ -42,9 +47,9 @@ export const productsApi = baseApi.injectEndpoints({
       providesTags: (result) =>
         Array.isArray(result)
           ? [
-              ...result.map((p) => ({ type: "Products", id: p._id })),
-              { type: "Products", id: "LIST" },
-            ]
+            ...result.map((p) => ({ type: "Products", id: p._id })),
+            { type: "Products", id: "LIST" },
+          ]
           : [{ type: "Products", id: "LIST" }],
     }),
     getProductById: builder.query({

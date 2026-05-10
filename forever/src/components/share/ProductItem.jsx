@@ -1,35 +1,30 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
-import { toast } from "react-toastify";
-import { useCart } from "../../features/cart/useCart";
 
 const ProductItem = ({ product, index = 0, className = "" }) => {
-  const { add } = useCart();
-  const [quantity, setQuantity] = useState(1);
-  const [isAdded, setIsAdded] = useState(false);
-
   const image = product?.image?.[0] ?? product?.images?.[0] ?? "";
   const name = product?.name ?? "Product";
   const description = product?.description ?? "";
   const price = Number(product?.price) || 0;
   const id = product?._id;
+  const stock = Number(product?.stock) || 0;
+  const sizes = Array.isArray(product?.sizes)
+    ? product.sizes
+    : Array.isArray(product?.size)
+      ? product.size
+      : [];
+  const colors = Array.isArray(product?.colors)
+    ? product.colors
+    : Array.isArray(product?.color)
+      ? product.color
+      : [];
 
   const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;
 
-  const onIncrease = () => setQuantity((q) => Math.min(q + 1, 10));
-  const onDecrease = () => setQuantity((q) => Math.max(q - 1, 1));
-
-  const onAddToCart = () => {
-    if (!id) return;
-    add({ productId: id, quantity, product });
-    setIsAdded(true);
-    toast.success("Added to cart");
-    window.setTimeout(() => setIsAdded(false), 1200);
-  };
-
   const formattedPrice = useMemo(() => `$${price.toFixed(2)}`, [price]);
+
+  const sizesText = sizes.length ? sizes.join(", ") : "N/A";
 
   return (
     <motion.article
@@ -84,7 +79,7 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
                 stiffness: 220,
               }}
             >
-              New
+              {stock > 0 ? "In Stock" : "Out of Stock"}
             </motion.div>
           </div>
 
@@ -103,7 +98,7 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
                   {name}
                 </Link>
               </motion.h3>
-              <p className="line-clamp-2 text-xs text-gray-500">
+              <p className="line-clamp-1 text-xs text-gray-500">
                 {description}
               </p>
             </div>
@@ -118,67 +113,23 @@ const ProductItem = ({ product, index = 0, className = "" }) => {
             </motion.div>
 
             <div className="flex items-center justify-between gap-3">
+              {/* <span className="text-xs font-medium text-gray-500">
+                Stock: {stock}
+              </span> */}
               <span className="text-xs font-medium text-gray-500">
-                Quantity
+                 {sizesText}
               </span>
-              <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-1 ring-1 ring-gray-200/70">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onDecrease}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/60 hover:bg-gray-900 hover:text-white"
-                  aria-label="Decrease quantity"
-                >
-                  <Minus className="h-4 w-4" />
-                </motion.button>
-
-                <motion.span
-                  key={quantity}
-                  initial={{ scale: 1.4, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="w-7 text-center text-sm font-semibold text-gray-900"
-                >
-                  {quantity}
-                </motion.span>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onIncrease}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/60 hover:bg-gray-900 hover:text-white"
-                  aria-label="Increase quantity"
-                >
-                  <Plus className="h-4 w-4" />
-                </motion.button>
-              </div>
             </div>
-
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onAddToCart}
-              onPointerDown={(e) => e.stopPropagation()}
-              className={[
-                "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
-                isAdded
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-900 text-white hover:bg-black",
-              ].join(" ")}
-            >
-              <motion.span
-                animate={isAdded ? { rotate: 360, scale: [1, 1.15, 1] } : {}}
-                transition={{ duration: 0.45 }}
-                className="inline-flex"
-              >
-                <ShoppingCart className="h-4 w-4" />
-              </motion.span>
-              {isAdded ? "Added!" : "Add to Cart"}
-            </motion.button>
+            <div className="flex gap-2 mt-1">
+              {colors.map((color, idx) => (
+                <div
+                  key={idx}
+                  className="w-4 h-4 rounded-full border border-gray-300"
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>

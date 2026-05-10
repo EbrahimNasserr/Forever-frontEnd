@@ -19,17 +19,19 @@ const cartSlice = createSlice({
       state.ui.isCartOpen = Boolean(action.payload);
     },
     addItem(state, action) {
-      const { productId, size, quantity = 1, product } = action.payload ?? {};
+      const { productId, size, quantity = 1, color = "", product } = action.payload ?? {};
       if (!productId) return;
 
       const safeQty = Number.isFinite(Number(quantity)) ? Number(quantity) : 1;
       const qty = Math.max(1, Math.floor(safeQty));
       const keySize = size ?? "";
+      const keyColor = color ?? "";
 
       const existing = state.items.find(
         (i) =>
           String(i.productId) === String(productId) &&
-          String(i.size ?? "") === String(keySize)
+          String(i.size ?? "") === String(keySize) &&
+          String(i.color ?? "") === String(keyColor)
       );
 
       if (existing) existing.quantity += qty;
@@ -37,27 +39,30 @@ const cartSlice = createSlice({
         state.items.push({
           productId,
           size: keySize,
+          color: keyColor,
           quantity: qty,
           product: product ?? null,
         });
       }
     },
     removeItem(state, action) {
-      const { productId, size } = action.payload ?? {};
+      const { productId, size, color } = action.payload ?? {};
       state.items = state.items.filter(
         (i) =>
           !(
             String(i.productId) === String(productId) &&
-            String(i.size ?? "") === String(size ?? "")
+            String(i.size ?? "") === String(size ?? "") &&
+            String(i.color ?? "") === String(color ?? "")
           )
       );
     },
     setItemQuantity(state, action) {
-      const { productId, size, quantity } = action.payload ?? {};
+      const { productId, size, color, quantity } = action.payload ?? {};
       const item = state.items.find(
         (i) =>
           String(i.productId) === String(productId) &&
-          String(i.size ?? "") === String(size ?? "")
+          String(i.size ?? "") === String(size ?? "") &&
+          String(i.color ?? "") === String(color ?? "")
       );
       if (!item) return;
 
