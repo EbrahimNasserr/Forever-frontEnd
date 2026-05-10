@@ -155,7 +155,7 @@ const Cart = () => {
                       {item.product?.name}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Size: {item.size || "-"} · Color: {item.color || "-"}
+                      Size: {item.size || "-"} · Color: <span style={{ backgroundColor: item.color }} className="inline-block w-3 h-3 rounded-full align-middle" />
                     </p>
                     <p className="mt-1 text-sm text-gray-500">
                       ${item.product?.price} each

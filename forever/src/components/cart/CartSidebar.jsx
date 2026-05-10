@@ -134,8 +134,7 @@ const CartSidebar = ({ isOpen, onClose }) => {
                             <p className="mt-1 text-xs text-gray-500">
                               Size: {item.size || "-"}
                             </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Color: {item.color || "-"}
+                            <p style={{ backgroundColor: item.color }} className="mt-1 px-2 py-2 w-fit rounded-full text-xs text-gray-500">
                             </p>
                             <p className="mt-1 text-sm font-semibold text-gray-900">
                               ${item.product?.price}
