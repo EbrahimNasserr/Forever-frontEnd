@@ -33,7 +33,11 @@ const normalizeProduct = (product) => {
 export const productsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getAllProducts: builder.query({
-      query: () => ({ url: "/api/product/all", method: "GET" }),
+      query: (category) => ({
+        url: "/api/product/all",
+        method: "GET",
+        ...(category ? { params: { category } } : {}),
+      }),
       transformResponse: (response) => {
         const list = Array.isArray(response)
           ? response

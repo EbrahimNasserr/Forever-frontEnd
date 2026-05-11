@@ -2,12 +2,12 @@ import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { ShoppingBag, Trash2, X } from "lucide-react";
 import { useCart } from "../../features/cart/useCart";
 
 const CartSidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { items: cart, isAuthenticated, summary, remove, setQuantity } = useCart();
+  const { items: cart, isAuthenticated, summary, remove } = useCart();
   const products = useSelector((state) => state.products.items);
   const cartItems = useMemo(() => {
     if (!Array.isArray(cart)) return [];
@@ -120,7 +120,7 @@ const CartSidebar = ({ isOpen, onClose }) => {
                         key={`${item.productId}-${item.size}`}
                         className="rounded-2xl border border-gray-200 p-3"
                       >
-                        <div className="flex gap-3">
+                        <Link  to={`/product/${item.productId}`} className="flex gap-3">
                           <img
                             src={item.product?.image?.[0]}
                             alt={item.product?.name ?? ""}
@@ -140,42 +140,9 @@ const CartSidebar = ({ isOpen, onClose }) => {
                               ${item.product?.price}
                             </p>
                           </div>
-                        </div>
+                        </Link>
 
-                        <div className="mt-3 flex items-center justify-between">
-                          <div className="inline-flex items-center rounded-xl border border-gray-200">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setQuantity({
-                                  cartItem: item,
-                                  productId: item.productId,
-                                  size: item.size,
-                                  quantity: item.quantity - 1,
-                                })
-                              }
-                              className="p-2 text-gray-700 hover:bg-gray-50"
-                            >
-                              <Minus className="size-4" />
-                            </button>
-                            <span className="min-w-8 px-2 text-center text-sm font-semibold">
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setQuantity({
-                                  cartItem: item,
-                                  productId: item.productId,
-                                  size: item.size,
-                                  quantity: item.quantity + 1,
-                                })
-                              }
-                              className="p-2 text-gray-700 hover:bg-gray-50"
-                            >
-                              <Plus className="size-4" />
-                            </button>
-                          </div>
+                        <div className="mt-3 flex items-end justify-end">
 
                           <button
                             type="button"
