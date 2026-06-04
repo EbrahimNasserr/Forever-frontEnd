@@ -281,8 +281,7 @@ const ProductDetails = ({ productId }) => {
                           : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
                       ].join(" ")}
                       aria-pressed={isActive}
-                    >
-                    </motion.button>
+                    ></motion.button>
                   );
                 })}
               </div>
@@ -365,7 +364,11 @@ const ProductDetails = ({ productId }) => {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
               >
-                <Reviews ratingValue={ratingValue} ratingCount={ratingCount} />
+                <Reviews
+                  productId={product?._id}
+                  ratingValue={ratingValue}
+                  ratingCount={ratingCount}
+                />
               </motion.div>
             )}
           </AnimatePresence>
