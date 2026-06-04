@@ -49,22 +49,22 @@ const ProductDetails = ({ productId }) => {
     return subCat?.name ?? "";
   }, [product]);
 
-  const { ratingValue, ratingCount } = useMemo(() => {
+  const { averageRating, reviewsCount } = useMemo(() => {
     const rawValue =
-      product?.rating ?? product?.stars ?? product?.ratingValue ?? null;
+      product?.rating ?? product?.stars ?? product?.averageRating ?? null;
 
     const value = rawValue == null ? null : Number(rawValue);
 
     const countRaw =
-      product?.ratingCount ?? product?.reviewsCount ?? product?.reviewCount;
+      product?.reviewsCount ?? product?.reviewsCount ?? product?.reviewCount;
 
     const count = countRaw == null ? null : Number(countRaw);
 
     return {
-      ratingValue: Number.isFinite(value)
+      averageRating: Number.isFinite(value)
         ? Math.max(0, Math.min(5, value))
         : null,
-      ratingCount: Number.isFinite(count) && count >= 0 ? count : null,
+      reviewsCount: Number.isFinite(count) && count >= 0 ? count : null,
     };
   }, [product]);
 
@@ -198,7 +198,7 @@ const ProductDetails = ({ productId }) => {
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => {
-                const filled = ratingValue != null && ratingValue >= i + 1;
+                const filled = averageRating != null && averageRating >= i + 1;
                 return (
                   <Star
                     key={i}
@@ -214,8 +214,8 @@ const ProductDetails = ({ productId }) => {
             </div>
 
             <p className="text-sm text-gray-600">
-              {ratingValue != null ? ratingValue.toFixed(1) : "No reviews yet"}
-              {ratingCount != null ? ` · ${ratingCount} reviews` : ""}
+              {averageRating != null ? averageRating.toFixed(1) : "No reviews yet"}
+              {reviewsCount != null ? ` · ${reviewsCount} reviews` : ""}
             </p>
           </div>
 
@@ -366,8 +366,8 @@ const ProductDetails = ({ productId }) => {
               >
                 <Reviews
                   productId={product?._id}
-                  ratingValue={ratingValue}
-                  ratingCount={ratingCount}
+                  averageRating={averageRating}
+                  reviewsCount={reviewsCount}
                 />
               </motion.div>
             )}
