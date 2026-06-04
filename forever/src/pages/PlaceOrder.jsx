@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { assets } from "../assets/assets";
-import { CreditCard, Truck } from "lucide-react";
+import { CreditCard, Truck, Loader } from "lucide-react";
 import { usePlaceOrderMutation } from "../features/orders/ordersApi";
+import { useCreateCheckoutSessionMutation } from "../features/payment/paymentApi";
 import { addOrder } from "../features/orders/ordersSlice";
 import {
   initialOrderForm,
@@ -23,6 +24,8 @@ const PlaceOrder = () => {
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
 
   const [placeOrderApi, { isLoading }] = usePlaceOrderMutation();
+  const [createCheckoutSession, { isLoading: isCheckingOut }] =
+    useCreateCheckoutSessionMutation();
 
   const items = useMemo(
     () =>
@@ -70,6 +73,41 @@ const PlaceOrder = () => {
       billingSameAsShipping,
     );
 
+    // For Stripe, create checkout session
+    if (paymentMethod === "stripe") {
+      try {
+        const shippingAddress = {
+          street: form.shippingStreet,
+          city: form.shippingCity,
+          state: form.shippingState,
+          zipCode: form.shippingZipCode,
+          country: form.shippingCountry,
+        };
+
+        const checkoutData = await createCheckoutSession({
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })),
+          shippingAddress,
+        }).unwrap();
+
+        if (checkoutData?.url) {
+          window.location.href = checkoutData.url;
+        } else {
+          toast.error("Failed to initiate checkout. Please try again.");
+        }
+      } catch (err) {
+        const message =
+          err?.data?.message ||
+          err?.error ||
+          "Checkout failed. Please try again.";
+        toast.error(message);
+      }
+      return;
+    }
+
+    // For non-Stripe payments (COD, Razorpay), place order directly
     try {
       const order = await placeOrderApi(payload).unwrap();
       dispatch(
@@ -380,10 +418,11 @@ const PlaceOrder = () => {
               <button
                 type="button"
                 onClick={handlePlaceOrder}
-                disabled={isLoading}
-                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isLoading || isCheckingOut}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoading ? "Placing order..." : "Place order"}
+                {isCheckingOut && <Loader className="size-4 animate-spin" />}
+                {isLoading || isCheckingOut ? "Processing..." : "Place order"}
               </button>
             </aside>
           </div>
