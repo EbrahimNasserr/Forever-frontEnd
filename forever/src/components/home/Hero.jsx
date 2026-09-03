@@ -1,581 +1,297 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import {
-  AnimatePresence,
   motion,
   useMotionValue,
+  useSpring,
   useTransform,
 } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ShoppingCart,
-  Sparkles,
-  Star,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { ArrowDown, ChevronRight, Compass, Play, Sparkles } from "lucide-react";
 import { assets } from "../../assets/assets.js";
+import { setVideoOpen } from "../../features/cart/cartSlice.js";
 
-const stats = [
-  { label: "Products Sold", value: "50K+", icon: TrendingUp },
-  { label: "Happy Customers", value: "25K+", icon: Star },
-  { label: "Global Reach", value: "120+", icon: Zap },
-];
+// ─── helpers ────────────────────────────────────────────────────────────────
 
 const pickFeaturedProducts = (items) => {
   if (!Array.isArray(items) || items.length === 0) return [];
-
   const bestSellers = items.filter((p) => p?.bestseller === true);
-  const latestSorted = [...items].sort(
-    (a, b) => (b?.date ?? 0) - (a?.date ?? 0),
-  );
-
+  const latestSorted = [...items].sort((a, b) => (b?.date ?? 0) - (a?.date ?? 0));
   const first = bestSellers[0] ?? latestSorted[0];
   const second = bestSellers[1] ?? latestSorted[1] ?? items[1];
-  const third = bestSellers[2] ?? latestSorted[2] ?? items[2];
-
-  return [first, second, third].filter(Boolean);
+  return [first, second].filter(Boolean);
 };
 
-const seeded = (seed) => {
-  // Deterministic pseudo-random in [0, 1) (stable across renders)
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-};
-
-const Particle = ({ delay = 0, x = 0, y = 0, duration = 4 }) => {
-  return (
-    <motion.div
-      className="absolute size-1 rounded-full bg-black/50"
-      style={{ left: `${x}%`, top: `${y}%` }}
-      animate={{ y: [0, -30, 0], opacity: [0, 1, 0], scale: [0, 1.5, 0] }}
-      transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }}
-    />
-  );
-};
-
-const FloatingShape = ({ index, size, x, y, duration }) => {
-  return (
-    <motion.div
-      className="absolute rounded-full blur-3xl opacity-20"
-      style={{
-        width: size,
-        height: size,
-        left: `${x}%`,
-        top: `${y}%`,
-        background:
-          index % 3 === 0
-            ? "radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)"
-            : index % 3 === 1
-              ? "radial-gradient(circle, rgba(148,163,184,0.20) 0%, transparent 70%)"
-              : "radial-gradient(circle, rgba(15,23,42,0.35) 0%, transparent 70%)",
-      }}
-      animate={{
-        x: [0, 90, -90, 0],
-        y: [0, -90, 90, 0],
-        scale: [1, 1.2, 0.85, 1],
-      }}
-      transition={{ duration, repeat: Infinity, ease: "linear" }}
-    />
-  );
-};
-
-const MagneticButton = ({ children, onClick, variant = "primary" }) => {
-  const ref = useRef(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const handleMouseMove = (e) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    x.set((e.clientX - centerX) * 0.25);
-    y.set((e.clientY - centerY) * 0.25);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  const classes =
-    variant === "primary"
-      ? "bg-black text-white hover:bg-black/90 shadow-2xl cursor-pointer"
-      : "bg-white/10 text-black hover:bg-white/90 ring-1 ring-white/20 backdrop-blur border cursor-pointer";
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{ x, y }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="inline-block"
-      whileHover={{ scale: 1.04 }}
-      whileTap={{ scale: 0.98 }}
-    >
-      <button
-        type="button"
-        onClick={onClick}
-        className={[
-          "inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-sm font-semibold",
-          "transition-colors",
-          classes,
-        ].join(" ")}
-      >
-        {children}
-      </button>
-    </motion.div>
-  );
-};
-
-const ProductCard = ({ product, index, isMain = false }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const img = product?.image?.[0] ?? assets.hero_img;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.6 }}
-      whileHover={{ scale: isMain ? 1.03 : 1.08, rotateY: 4 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      className={["relative", isMain ? "w-full h-full" : ""].join(" ")}
-    >
-      <div
-        className={[
-          "overflow-hidden rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl",
-          isMain ? "h-full" : "",
-        ].join(" ")}
-      >
-        <div className="relative">
-          <motion.img
-            src={img}
-            alt={product?.name ?? "Product"}
-            className={[
-              "w-full object-cover",
-              isMain ? "h-[400px]" : "h-48",
-            ].join(" ")}
-            animate={{ scale: isHovered ? 1.08 : 1 }}
-            transition={{ duration: 0.6 }}
-            loading="lazy"
-          />
-
-          {product?.bestseller && (
-            <span className="absolute left-4 top-4 rounded-full bg-white text-zinc-950 px-3 py-1 text-xs font-semibold">
-              Best Seller
-            </span>
-          )}
-
-          <motion.div
-            className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent"
-            animate={{ opacity: isHovered ? 1 : 0.65 }}
-          />
-        </div>
-
-        <div className={[isMain ? "p-7" : "p-4", "text-white"].join(" ")}>
-          <h3
-            className={[isMain ? "text-3xl" : "text-lg", "font-bold"].join(" ")}
-          >
-            {product?.name ?? "Featured product"}
-          </h3>
-          <p className="mt-1 text-sm text-white/60">
-            {product?.category ? `${product.category} • ` : ""}
-            {product?.subCategory ?? "New in"}
-          </p>
-
-          <div className="mt-4 flex items-center gap-3">
-            <span
-              className={[isMain ? "text-4xl" : "text-2xl", "font-bold"].join(
-                " ",
-              )}
-            >
-              ${product?.price ?? "--"}
-            </span>
-            <span className="text-sm text-white/50 line-clamp-1">
-              {product?.sizes?.length
-                ? `${product.sizes.length} sizes`
-                : "Limited"}
-            </span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+// ─── Hero ────────────────────────────────────────────────────────────────────
 
 const Hero = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const items = useSelector((state) => state.products.items);
-
   const featured = useMemo(() => pickFeaturedProducts(items), [items]);
-  const slides = useMemo(() => {
-    const base = featured.length ? featured : [null, null, null];
-    return base.slice(0, 3).map((p, idx) => ({
-      id: p?._id ?? `fallback-${idx}`,
-      title:
-        idx === 0
-          ? "Latest Arrivals"
-          : idx === 1
-            ? "Best Sellers"
-            : "New Season",
-      subtitle: "Forever Commerce",
-      description:
-        p?.description ??
-        "Discover our newest pieces — crafted for everyday comfort and effortless style.",
-      product: p,
-      accent:
-        idx === 0
-          ? "rgba(255,255,255,0.20)"
-          : idx === 1
-            ? "rgba(148,163,184,0.22)"
-            : "rgba(15,23,42,0.35)",
-    }));
-  }, [featured]);
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  // Paris time
+  const [timeInParis, setTimeInParis] = useState("");
+  useEffect(() => {
+    const updateTime = () => {
+      setTimeInParis(
+        new Date().toLocaleTimeString("en-GB", {
+          timeZone: "Europe/Paris",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      );
+    };
+    updateTime();
+    const id = setInterval(updateTime, 1000);
+    return () => clearInterval(id);
+  }, []);
 
+  // Mouse parallax
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const containerRef = useRef(null);
-
-  const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
-  const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
-
-  const nextSlide = () => {
-    setDirection(1);
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
-
-  const prevSlide = () => {
-    setDirection(-1);
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isDragging) nextSlide();
-    }, 6500);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSlide, isDragging]);
+  const springConfig = { damping: 30, stiffness: 200 };
+  const smoothX = useSpring(mouseX, springConfig);
+  const smoothY = useSpring(mouseY, springConfig);
+  const imageParallaxX = useTransform(smoothX, [-0.5, 0.5], [-20, 20]);
+  const imageParallaxY = useTransform(smoothY, [-0.5, 0.5], [-15, 15]);
+  const tagParallaxX = useTransform(smoothX, [-0.5, 0.5], [25, -25]);
+  const tagParallaxY = useTransform(smoothY, [-0.5, 0.5], [20, -20]);
 
   const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left - rect.width / 2);
-    mouseY.set(e.clientY - rect.top - rect.height / 2);
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
   };
 
-  const shapes = useMemo(
-    () =>
-      [...Array(5)].map((_, i) => ({
-        index: i,
-        size: 200 + seeded(i * 13.1) * 260,
-        x: seeded(i * 19.7) * 100,
-        y: seeded(i * 29.3) * 100,
-        duration: 18 + seeded(i * 41.9) * 12,
-      })),
-    [],
-  );
-
-  const particles = useMemo(
-    () =>
-      [...Array(18)].map((_, i) => ({
-        i,
-        x: seeded(i * 7.7) * 100,
-        y: seeded(i * 11.9) * 100,
-        duration: 3 + seeded(i * 17.3) * 4,
-        delay: i * 0.2,
-      })),
-    [],
-  );
-
-  const slideVariants = {
-    enter: (dir) => ({
-      x: dir > 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.9,
-      rotateY: dir > 0 ? 25 : -25,
-    }),
-    center: { x: 0, opacity: 1, scale: 1, rotateY: 0 },
-    exit: (dir) => ({
-      x: dir < 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.9,
-      rotateY: dir < 0 ? 25 : -25,
-    }),
+  const scrollToCollection = () => {
+    document
+      .getElementById("collection-section")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const current = slides[currentSlide] ?? slides[0];
-  const mainProduct = current?.product ?? null;
+  const mainProduct = featured[0] ?? null;
+  const secondProduct = featured[1] ?? null;
+  const mainImg = mainProduct?.image?.[0] ?? assets.hero_img;
+  const secondImg = secondProduct?.image?.[0] ?? assets.hero_img;
 
-  const floatingProducts = useMemo(() => {
-    if (!Array.isArray(items) || items.length < 2) return [];
-    const pool = items.filter(Boolean);
-    const a = pool[(currentSlide + 2) % pool.length];
-    const b = pool[(currentSlide + 5) % pool.length];
-    return [a, b].filter(Boolean);
-  }, [items, currentSlide]);
+  const galleryItems = [
+    { num: "01", label: "Categories", name: "Topwear" },
+    { num: "02", label: "Categories", name: "Bottomwear" },
+    { num: "03", label: "Categories", name: "Winterwear" },
+  ];
 
   return (
     <section
-      ref={containerRef}
+      className="relative w-full overflow-hidden bg-[#F5F2ED] min-h-screen"
       onMouseMove={handleMouseMove}
-      className="relative w-full overflow-hidden"
     >
-      {/* Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0" />
-        <div className="absolute inset-0 opacity-60 " />
-
-        {shapes.map((s) => (
-          <FloatingShape
-            key={s.index}
-            index={s.index}
-            size={s.size}
-            x={s.x}
-            y={s.y}
-            duration={s.duration}
-          />
-        ))}
-        {particles.map((p) => (
-          <Particle
-            key={p.i}
-            delay={p.delay}
-            x={p.x}
-            y={p.y}
-            duration={p.duration}
-          />
-        ))}
+      {/* Mesh background blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-stone-200/60 to-transparent blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-stone-300/40 to-transparent blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:px-8">
-        <div className="min-h-[calc(100vh-160px)] flex flex-col">
-          <div className="flex-1 flex items-center">
-            <div className="grid w-full items-center gap-12 lg:grid-cols-2">
-              {/* Left */}
-              <div className="space-y-8">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={currentSlide}
-                    custom={direction}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-                    className="space-y-6"
-                  >
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider ring-1 ring-white/15 backdrop-blur">
-                      <span className="inline-block size-1.5 rounded-full bg-white/70" />
-                      {current?.subtitle ?? "Forever Commerce"}
-                    </div>
+      <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
+        {/* ── Top editorial bar ── */}
+        <div className="flex items-center justify-between pt-6 pb-4 border-b border-black/10">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#1A1A1A]/60"
+          >
+            <span>Spring / Summer 2024 Edition</span>
+            <span className="w-1 h-1 rounded-full bg-[#1A1A1A]/30" />
+            <span>Forever Commerce</span>
+          </motion.div>
 
-                    <motion.h1
-                      className="prata-regular text-5xl font-bold leading-tight sm:text-6xl lg:text-7xl"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15, duration: 0.8 }}
-                    >
-                      {current?.title ?? "Shop the Collection"}
-                    </motion.h1>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="hidden sm:flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#1A1A1A]/60"
+          >
+            <span>Atelier Clocks: {timeInParis || "–– : –– : ––"} CET</span>
+            <span className="w-1 h-1 rounded-full bg-[#1A1A1A]/30" />
+            <span>Limited Archive</span>
+          </motion.div>
+        </div>
 
-                    <motion.p
-                      className="max-w-xl text-base sm:text-lg"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.25 }}
-                    >
-                      {current?.description}
-                    </motion.p>
+        {/* ── Main grid ── */}
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center py-12 lg:py-16">
+          {/* Left — branding */}
+          <div className="space-y-8">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-5">
+                Spring / Summer 2024
+              </p>
+              <h1 className="font-serif leading-[0.9] text-[#1A1A1A]">
+                <span className="block text-6xl sm:text-7xl lg:text-8xl font-bold">
+                  The Art
+                </span>
+                <span className="block text-6xl sm:text-7xl lg:text-8xl font-bold italic">
+                  Of Living.
+                </span>
+              </h1>
+            </motion.div>
 
-                    <motion.div
-                      className="flex flex-wrap gap-3"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 }}
-                    >
-                      <MagneticButton
-                        onClick={() => navigate("/collection")}
-                        variant="primary"
-                      >
-                        <ShoppingCart className="size-4" />
-                        Shop Now
-                      </MagneticButton>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="max-w-md text-sm sm:text-base text-[#1A1A1A]/60 leading-relaxed"
+            >
+              Exploring the intersection of architectural minimalism and
+              performance tailoring. A curated dialogue between form and
+              function.
+            </motion.p>
 
-                      <MagneticButton
-                        onClick={() => {
-                          if (mainProduct?._id)
-                            navigate(`/product/${mainProduct._id}`);
-                          else navigate("/collection");
-                        }}
-                        variant="ghost"
-                      >
-                        <Sparkles className="size-4" />
-                        View Product
-                      </MagneticButton>
-                    </motion.div>
-                  </motion.div>
-                </AnimatePresence>
+            {/* Action buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="flex flex-wrap items-center gap-5"
+            >
+              <button
+                type="button"
+                onClick={() => navigate("/collection")}
+                className="inline-flex items-center gap-2 bg-[#1A1A1A] text-[#F5F2ED] px-7 py-3.5 rounded-full text-[12px] font-bold uppercase tracking-[0.15em] hover:bg-[#333] transition-all hover:-translate-y-0.5 shadow-lg"
+              >
+                <Sparkles className="size-3.5" />
+                Shop Now
+              </button>
 
-                {/* Stats */}
-                <motion.div
-                  className="grid grid-cols-3 gap-3 pt-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  {stats.map((stat) => (
-                    <div
-                      key={stat.label}
-                      className="rounded-xl p-4 text-center"
-                    >
-                      <stat.icon className="mx-auto mb-2 size-5" />
-                      <div className="text-xl font-bold">
-                        {stat.value}
-                      </div>
-                      <div className="text-[11px]">
-                        {stat.label}
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Right */}
-              <div className="relative">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={currentSlide}
-                    custom={direction}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-                    style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-                    className="relative"
-                    onPointerDown={() => setIsDragging(true)}
-                    onPointerUp={() => setIsDragging(false)}
-                    onPointerCancel={() => setIsDragging(false)}
-                    onPointerLeave={() => setIsDragging(false)}
-                  >
-                    <Link
-                      to={
-                        mainProduct?._id
-                          ? `/product/${mainProduct._id}`
-                          : "/collection"
-                      }
-                    >
-                      <ProductCard product={mainProduct} index={0} isMain />
-                    </Link>
-
-                    {/* Floating products */}
-                    {floatingProducts[0] && (
-                      <motion.div
-                        className="absolute -right-6 top-12 w-44 sm:w-48"
-                        animate={{ y: [0, -18, 0], rotate: [0, 4, 0] }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Link to={`/product/${floatingProducts[0]._id}`}>
-                          <ProductCard
-                            product={floatingProducts[0]}
-                            index={1}
-                          />
-                        </Link>
-                      </motion.div>
-                    )}
-
-                    {/* {floatingProducts[1] && (
-                      <motion.div
-                        className="absolute -left-6 bottom-12 w-44 sm:w-48"
-                        animate={{ y: [0, 18, 0], rotate: [0, -4, 0] }}
-                        transition={{
-                          duration: 5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: 1,
-                        }}
-                      >
-                        <Link to={`/product/${floatingProducts[1]._id}`}>
-                          <ProductCard
-                            product={floatingProducts[1]}
-                            index={2}
-                          />
-                        </Link>
-                      </motion.div>
-                    )} */}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
+              <button
+                type="button"
+                onClick={() => dispatch(setVideoOpen(true))}
+                className="inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.15em] font-bold border-b border-[#1A1A1A] pb-1 text-[#1A1A1A] hover:opacity-50 transition-opacity"
+              >
+                <Play className="size-3" fill="currentColor" />
+                View Lookbook
+              </button>
+            </motion.div>
           </div>
 
-          {/* Bottom controls */}
-          <div className="mt-10 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                className="inline-flex cursor-pointer size-11 items-center justify-center rounded-full hover:bg-black/10 ring-1 ring-black/15"
-                onClick={prevSlide}
-                aria-label="Previous"
+          {/* Right — visuals */}
+          <div className="relative flex justify-center lg:justify-end">
+            {/* Main visual card */}
+            <motion.div
+              style={{ x: imageParallaxX, y: imageParallaxY }}
+              className="relative w-[320px] sm:w-[380px] lg:w-[420px]"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.9 }}
+                className="relative rounded-[28px] overflow-hidden shadow-2xl bg-[#E5E2DD] aspect-[3/4] cursor-pointer"
+                onClick={() =>
+                  mainProduct?._id
+                    ? navigate(`/product/${mainProduct._id}`)
+                    : navigate("/collection")
+                }
               >
-                <ChevronLeft className="size-5" />
-              </button>
+                <img
+                  src={mainImg}
+                  alt={mainProduct?.name ?? "Featured product"}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+                {/* Featured product floating badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="absolute bottom-5 left-5 right-5 bg-white/80 backdrop-blur-md rounded-2xl px-4 py-3"
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#1A1A1A]/50 mb-0.5">
+                    Featured Product
+                  </p>
+                  <p className="text-sm font-bold text-[#1A1A1A] truncate">
+                    {mainProduct?.name ?? "Sculptural Overcoat"}
+                  </p>
+                </motion.div>
+              </motion.div>
 
-              <div className="flex gap-2">
-                {slides.map((s, i) => (
-                  <motion.button
-                    key={s.id}
-                    type="button"
-                    className={[
-                      "h-2 rounded-full transition-all",
-                      i === currentSlide ? "w-8 bg-black" : "w-2 bg-black/30",
-                    ].join(" ")}
-                    onClick={() => {
-                      setDirection(i > currentSlide ? 1 : -1);
-                      setCurrentSlide(i);
-                    }}
-                    whileHover={{ scale: 1.15 }}
-                    aria-label={`Go to slide ${i + 1}`}
+              {/* Decorative frame offset */}
+              <div className="absolute -top-3 -left-3 w-full h-full border-2 border-[#1A1A1A]/10 rounded-[32px] pointer-events-none" />
+            </motion.div>
+
+            {/* Floating secondary card */}
+            {secondProduct && (
+              <motion.div
+                style={{ x: tagParallaxX, y: tagParallaxY }}
+                animate={{ y: [0, -12, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -right-4 sm:-right-8 top-12 w-36 sm:w-44 cursor-pointer"
+                onClick={() => navigate(`/product/${secondProduct._id}`)}
+              >
+                <div className="rounded-2xl overflow-hidden shadow-xl bg-[#E5E2DD] aspect-[3/4]">
+                  <img
+                    src={secondImg}
+                    alt={secondProduct.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
                   />
-                ))}
-              </div>
+                </div>
+              </motion.div>
+            )}
 
-              <button
-                type="button"
-                className="inline-flex cursor-pointer size-11 items-center justify-center rounded-full hover:bg-black/10 ring-1 ring-black/15"
-                onClick={nextSlide}
-                aria-label="Next"
-              >
-                <ChevronRight className="size-5" />
-              </button>
+            {/* Vertical accent text */}
+            <div className="hidden lg:flex absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 origin-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#1A1A1A]/30 whitespace-nowrap">
+                ESTABLISHED IN FOREVER — 2024
+              </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Cursor glow */}
-      <motion.div
-        className="absolute z-0 size-96 rounded-full blur-3xl opacity-30 pointer-events-none"
-        style={{
-          background: current?.accent ?? "rgba(255,255,255,0.18)",
-          x: mouseX,
-          y: mouseY,
-        }}
-        animate={{ scale: [1, 1.18, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      />
+        {/* ── Bottom gallery preview bar ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="border-t border-black/10 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-8">
+            {galleryItems.map((item) => (
+              <button
+                key={item.num}
+                type="button"
+                onClick={() => navigate("/collection")}
+                className="flex items-center gap-3 group"
+              >
+                <span className="text-[10px] font-bold text-[#1A1A1A]/30 tracking-widest">
+                  {item.num}
+                </span>
+                <div className="text-left">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-[#1A1A1A]/40 font-semibold">
+                    {item.label}
+                  </p>
+                  <p className="text-sm font-bold text-[#1A1A1A] group-hover:opacity-50 transition-opacity">
+                    {item.name}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={scrollToCollection}
+            className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-colors"
+          >
+            <ArrowDown className="size-4 animate-bounce" />
+            Explore
+          </button>
+        </motion.div>
+      </div>
     </section>
   );
 };

@@ -1,9 +1,26 @@
 import { baseApi } from "../../store/api/baseApi";
 
+/**
+ * Safely extract a display string from a value that may be:
+ *   - a plain string  → returned as-is
+ *   - a category/subCategory object { name, slug, _id, … } → returns .name
+ *   - anything else   → returns ""
+ */
+const toStr = (val) => {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object") return String(val.name ?? val.slug ?? val._id ?? "");
+  return String(val);
+};
+
 const normalizeProduct = (product) => {
   if (!product || typeof product !== "object") return null;
   return {
     ...product,
+    // Flatten category/subCategory to plain strings so they are always
+    // safe to render directly in JSX without "Objects are not valid" errors.
+    category: toStr(product.category),
+    subCategory: toStr(product.subCategory),
     image: Array.isArray(product.image)
       ? product.image
       : Array.isArray(product.images)

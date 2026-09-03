@@ -1,6 +1,6 @@
 const CollectionHeader = ({ count, sortBy, onSortByChange, sortOptions }) => {
   return (
-    <div className="mb-6">
+    <div className="mb-6 px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex gap-3 items-center">
           <h2 className="prata-regular uppercase text-2xl font-medium leading-relaxed md:text-3xl">

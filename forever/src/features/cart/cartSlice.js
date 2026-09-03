@@ -8,6 +8,7 @@ const initialState = {
   items: loadGuestCart(),
   ui: {
     isCartOpen: false,
+    isVideoOpen: false,
   },
 };
 
@@ -17,6 +18,9 @@ const cartSlice = createSlice({
   reducers: {
     setCartOpen(state, action) {
       state.ui.isCartOpen = Boolean(action.payload);
+    },
+    setVideoOpen(state, action) {
+      state.ui.isVideoOpen = Boolean(action.payload);
     },
     addItem(state, action) {
       const { productId, size, quantity = 1, color = "", product } = action.payload ?? {};
@@ -82,7 +86,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { setCartOpen, addItem, removeItem, setItemQuantity, clearCart, replaceCart } =
+export const { setCartOpen, setVideoOpen, addItem, removeItem, setItemQuantity, clearCart, replaceCart } =
   cartSlice.actions;
 
 export default cartSlice.reducer;

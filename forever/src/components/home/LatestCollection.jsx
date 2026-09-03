@@ -5,7 +5,7 @@ import Title from "../share/Title.jsx";
 import ProductItem from "../share/ProductItem.jsx";
 import { useGetAllProductsQuery } from "../../features/products/productsApi";
 
-const LatestCollection = () => {
+const LatestCollection = ({ wishlistIds = [], onToggleWishlist, onQuickView }) => {
   const { data: products = [] } = useGetAllProductsQuery();
   const containerRef = useRef(null);
   const [width, setWidth] = useState(0);
@@ -99,6 +99,9 @@ const LatestCollection = () => {
                 key={p._id}
                 product={p}
                 index={idx}
+                wishlistIds={wishlistIds}
+                onToggleWishlist={onToggleWishlist}
+                onQuickView={onQuickView}
                 className="min-w-[260px] max-w-[260px] sm:min-w-[320px] sm:max-w-[320px]"
               />
             ))}

@@ -3,9 +3,11 @@ import { animate, motion, useMotionValue } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductItem from "../share/ProductItem.jsx";
 import { useGetAllProductsQuery } from "../../features/products/productsApi";
+import { useWishlist } from "../../features/wishlist/useWishlist";
 
 const RelatedProducts = ({ category, subCategory, currentProductId }) => {
   const { data: products = [] } = useGetAllProductsQuery();
+  const { wishlistIds, toggle: toggleWishlist } = useWishlist();
   const containerRef = useRef(null);
   const [width, setWidth] = useState(0);
   const x = useMotionValue(0);
@@ -108,6 +110,8 @@ const RelatedProducts = ({ category, subCategory, currentProductId }) => {
                 key={p._id}
                 product={p}
                 index={idx}
+                wishlistIds={wishlistIds}
+                onToggleWishlist={toggleWishlist}
                 className="min-w-[260px] max-w-[260px] sm:min-w-[320px] sm:max-w-[320px]"
               />
             ))}
