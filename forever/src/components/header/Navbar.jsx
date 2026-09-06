@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -9,11 +9,15 @@ import {
   Search,
   ShoppingBag,
   X,
+  LogOut,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import { assets } from "../../assets/assets";
 import SearchBar from "../share/SearchBar.jsx";
 import { getAccessToken } from "../../store/tokenStorage";
+import { clearSession } from "../../store/authSlice";
 import { selectCartCount } from "../../features/cart/cartSelectors";
+import { selectWishlistCount } from "../../features/wishlist/wishlistSelectors";
 
 // ─── constants ───────────────────────────────────────────────────────────────
 
@@ -27,12 +31,11 @@ const NavLinks = [
 const ProfileDropdown = [
   { to: "/profile", label: "My Profile" },
   { to: "/orders", label: "Orders" },
-  { to: "/logout", label: "Logout" },
 ];
 
 // ─── Mobile Sidebar ──────────────────────────────────────────────────────────
 
-const MobileSidebar = ({ isOpen, onClose, isAuthenticated }) => {
+const MobileSidebar = ({ isOpen, onClose, isAuthenticated, onLogout }) => {
   const sidebarRef = useRef(null);
 
   useEffect(() => {
@@ -121,29 +124,46 @@ const MobileSidebar = ({ isOpen, onClose, isAuthenticated }) => {
 
           {/* Account links */}
           {isAuthenticated ? (
-            ProfileDropdown.map((item, idx) => (
+            <>
+              {ProfileDropdown.map((item, idx) => (
+                <motion.div
+                  key={item.to}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: isOpen ? 1 : 0, x: isOpen ? 0 : 20 }}
+                  transition={{ delay: (NavLinks.length + idx) * 0.06, duration: 0.3 }}
+                >
+                  <NavLink
+                    to={item.to}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      [
+                        "flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-colors",
+                        isActive
+                          ? "bg-[#1A1A1A] text-[#F5F2ED]"
+                          : "text-[#1A1A1A]/60 hover:bg-black/5 hover:text-[#1A1A1A]",
+                      ].join(" ")
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </motion.div>
+              ))}
+              {/* Mobile logout */}
               <motion.div
-                key={item.to}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: isOpen ? 1 : 0, x: isOpen ? 0 : 20 }}
-                transition={{ delay: (NavLinks.length + idx) * 0.06, duration: 0.3 }}
+                transition={{ delay: (NavLinks.length + ProfileDropdown.length) * 0.06, duration: 0.3 }}
               >
-                <NavLink
-                  to={item.to}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    [
-                      "flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-colors",
-                      isActive
-                        ? "bg-[#1A1A1A] text-[#F5F2ED]"
-                        : "text-[#1A1A1A]/60 hover:bg-black/5 hover:text-[#1A1A1A]",
-                    ].join(" ")
-                  }
+                <button
+                  type="button"
+                  onClick={() => { onClose(); onLogout(); }}
+                  className="flex items-center gap-2 w-full px-4 py-3 rounded-2xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                 >
-                  {item.label}
-                </NavLink>
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
               </motion.div>
-            ))
+            </>
           ) : (
             <NavLink
               to="/login"
@@ -162,8 +182,9 @@ const MobileSidebar = ({ isOpen, onClose, isAuthenticated }) => {
 
 // ─── Navbar ──────────────────────────────────────────────────────────────────
 
-const Navbar = ({ onOpenCart, onOpenWishlist, wishlistCount = 0 }) => {
+const Navbar = ({ onOpenCart, onOpenWishlist }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -174,6 +195,14 @@ const Navbar = ({ onOpenCart, onOpenWishlist, wishlistCount = 0 }) => {
   const token = getAccessToken();
   const canShowProfile = Boolean(token) && isAuthenticated;
   const cartCount = useSelector(selectCartCount);
+  const wishlistCount = useSelector(selectWishlistCount);
+
+  const handleLogout = () => {
+    dispatch(clearSession());
+    setIsProfileOpen(false);
+    toast.success("You've been signed out.");
+    navigate("/login");
+  };
 
   // Scroll detection
   useEffect(() => {
@@ -358,6 +387,18 @@ const Navbar = ({ onOpenCart, onOpenWishlist, wishlistCount = 0 }) => {
                             {item.label}
                           </NavLink>
                         ))}
+                        {/* Logout */}
+                        <div className="mt-1 pt-1 border-t border-black/8">
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-[12px] font-semibold uppercase tracking-[0.1em] text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            role="menuitem"
+                          >
+                            <LogOut className="w-3.5 h-3.5" />
+                            Sign Out
+                          </button>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -380,10 +421,16 @@ const Navbar = ({ onOpenCart, onOpenWishlist, wishlistCount = 0 }) => {
                 className="relative hidden sm:flex items-center justify-center hover:opacity-60 transition-opacity p-1"
                 aria-label="Open wishlist"
               >
-                <Heart className="size-5 text-[#1A1A1A]" />
+                <Heart
+                  className={`size-5 transition-all duration-300 ${
+                    wishlistCount > 0
+                      ? "fill-[#C86D44] text-[#C86D44]"
+                      : "text-[#1A1A1A]"
+                  }`}
+                />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 size-4 rounded-full bg-[#1A1A1A] text-[#F5F2ED] text-[9px] font-bold flex items-center justify-center">
-                    {wishlistCount}
+                  <span className="absolute -top-1 -right-1 size-4 rounded-full bg-[#C86D44] text-white text-[9px] font-bold flex items-center justify-center">
+                    {wishlistCount > 9 ? "9+" : wishlistCount}
                   </span>
                 )}
               </button>
@@ -416,6 +463,7 @@ const Navbar = ({ onOpenCart, onOpenWishlist, wishlistCount = 0 }) => {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         isAuthenticated={canShowProfile}
+        onLogout={handleLogout}
       />
     </>
   );

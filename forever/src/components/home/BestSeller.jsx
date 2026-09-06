@@ -175,7 +175,7 @@ const ProductCard = ({ product, index, onQuickView, isFav = false, onToggleWishl
             <>
               <span className="w-1 h-1 rounded-full bg-[#1A1A1A]/20" />
               <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#1A1A1A]/40">
-                {product.subCategory}
+                {product.subCategoryName}
               </span>
             </>
           )}

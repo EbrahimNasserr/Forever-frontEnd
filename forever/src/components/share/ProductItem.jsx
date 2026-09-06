@@ -223,7 +223,7 @@ const ProductItem = ({
         <div>
           {/* Meta row */}
           <div className="flex items-center justify-between text-[10px] uppercase letter-spaced font-bold text-[#1A1A1A]/50 mb-1.5">
-            <span>{category || product?.subCategory || ""}</span>
+            <span>{category || product?.subCategoryName || ""}</span>
             {colors.length > 0 && (
               <div className="flex items-center gap-1">
                 {colors.slice(0, 4).map((c, i) => (

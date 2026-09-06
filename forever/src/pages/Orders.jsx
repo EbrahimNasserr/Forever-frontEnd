@@ -1,223 +1,180 @@
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { PackageCheck } from "lucide-react";
+import { Package, ArrowUpRight } from "lucide-react";
+
 import { useGetOrdersQuery } from "../features/orders/ordersApi";
+import { matchesFilter } from "../components/orders/orderUtils";
 
-const formatDate = (value) => {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString();
-};
-
-const formatCurrency = (value) => {
-  return `$${Number(value || 0).toFixed(2)}`;
-};
-
-const formatAddress = (address) => {
-  if (!address) return "-";
-  return [
-    address.street,
-    address.city,
-    address.state,
-    address.zipCode,
-    address.country,
-  ]
-    .filter(Boolean)
-    .join(", ");
-};
-
-const humanPaymentMethod = (method) => {
-  if (!method) return "Cash on Delivery";
-  return method
-    .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, (match) => match.toUpperCase());
-};
+import OrdersHeader from "../components/orders/OrdersHeader";
+import ConciergeStrip from "../components/orders/ConciergeStrip";
+import OrderFilters from "../components/orders/OrderFilters";
+import OrderSkeleton from "../components/orders/OrderSkeleton";
+import OrderCard from "../components/orders/OrderCard";
+import OrderDossierModal from "../components/orders/OrderDossierModal";
+import ReturnModal from "../components/orders/ReturnModal";
 
 const Orders = () => {
   const { data, isLoading, isFetching, isError, error } = useGetOrdersQuery();
   const orders = data?.orders ?? [];
 
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [returnOrder, setReturnOrder] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+
+  /* ── Filtered + searched list ── */
+  const filteredOrders = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return orders.filter((order) => {
+      if (!matchesFilter(order, selectedFilter)) return false;
+      if (!q) return true;
+      const id = (order._id || order.id || "").toLowerCase();
+      const itemMatch = (Array.isArray(order.items) ? order.items : []).some(
+        (it) => (it.name || it.product?.name || "").toLowerCase().includes(q),
+      );
+      return id.includes(q) || itemMatch;
+    });
+  }, [orders, selectedFilter, searchQuery]);
+
+  /* ── Filter tab counts ── */
+  const counts = useMemo(
+    () => ({
+      all: orders.length,
+      transit: orders.filter((o) => matchesFilter(o, "transit")).length,
+      delivered: orders.filter((o) => matchesFilter(o, "delivered")).length,
+      atelier: orders.filter((o) => matchesFilter(o, "atelier")).length,
+    }),
+    [orders],
+  );
+
+  const filterTabs = [
+    { id: "all",       label: "All Commissions",  count: counts.all },
+    { id: "transit",   label: "In Transit",        count: counts.transit },
+    { id: "delivered", label: "Delivered",          count: counts.delivered },
+    { id: "atelier",   label: "Atelier Crafting",  count: counts.atelier },
+  ];
+
+  /* ── Copy order ID ── */
+  const handleCopy = (id) => {
+    navigator.clipboard?.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  /* ══════════════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════════════ */
   return (
-    <section className="mx-auto max-w-6xl py-8 sm:py-12">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          Account
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-gray-900 sm:text-3xl">
-          My orders
-        </h1>
+    <div className="min-h-screen bg-[#F5F2ED] text-[#1a1a1a] pt-24 pb-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <OrdersHeader orderCount={orders.length} />
+
+        <ConciergeStrip />
+
+        <OrderFilters
+          tabs={filterTabs}
+          selectedFilter={selectedFilter}
+          onFilterChange={setSelectedFilter}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+
+        {/* ── Content states ── */}
+        {isLoading || isFetching ? (
+          <OrderSkeleton />
+        ) : isError ? (
+          <ErrorState message={error?.data?.message || error?.error} />
+        ) : filteredOrders.length === 0 ? (
+          <EmptyState
+            hasOrders={orders.length > 0}
+            hasActiveFilters={!!searchQuery || selectedFilter !== "all"}
+            onReset={() => { setSelectedFilter("all"); setSearchQuery(""); }}
+          />
+        ) : (
+          <div className="space-y-6">
+            {filteredOrders.map((order) => (
+              <OrderCard
+                key={order._id || order.id}
+                order={order}
+                copiedId={copiedId}
+                onCopy={handleCopy}
+                onViewDossier={setActiveOrder}
+                onReturn={setReturnOrder}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {isLoading || isFetching ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <PackageCheck className="mx-auto size-10 text-gray-300" />
-          <p className="mt-4 text-sm font-semibold text-gray-900">
-            Loading orders…
-          </p>
-        </div>
-      ) : isError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
-          <p className="text-sm font-semibold text-red-700">
-            Unable to load orders.
-          </p>
-          <p className="mt-2 text-sm text-red-600">
-            {error?.data?.message || error?.error || "Please try again later."}
-          </p>
-        </div>
-      ) : !Array.isArray(orders) || orders.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <PackageCheck className="mx-auto size-10 text-gray-300" />
-          <p className="mt-4 text-sm font-semibold text-gray-900">
-            No orders yet
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Your placed orders will show here.
-          </p>
-          <Link
-            to="/collection"
-            className="mt-5 inline-flex rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800"
-          >
-            Start shopping
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {orders.map((order) => (
-            <article
-              key={order._id ?? order.id}
-              className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    {order._id ?? order.id}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Placed on {formatDate(order.createdAt)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {order.status || "pending"}
-                  </p>
-                  <p className="mt-2 text-sm text-gray-600">
-                    Payment: {humanPaymentMethod(order.paymentMethod)}
-                  </p>
-                </div>
-              </div>
+      {/* ── Modals ── */}
+      <OrderDossierModal
+        order={activeOrder}
+        onClose={() => setActiveOrder(null)}
+      />
 
-              <div className="mt-5 space-y-4">
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      Shipping address
-                    </p>
-                    <p className="mt-3 text-sm text-gray-600">
-                      {formatAddress(order.shippingAddress)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      Billing address
-                    </p>
-                    <p className="mt-3 text-sm text-gray-600">
-                      {formatAddress(order.billingAddress)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
-                  <div className="space-y-3">
-                    {(Array.isArray(order.items) ? order.items : []).map(
-                      (item, idx) => {
-                        const imageSrc =
-                          item.image ||
-                          item.product?.images?.[0] ||
-                          item.product?.image?.[0] ||
-                          "";
-                        const title =
-                          item.name || item.product?.name || "Product";
-                        const lineTotal =
-                          Number(item.lineTotal || item.price || 0) *
-                          Number(item.quantity || 1);
-
-                        return (
-                          <div
-                            key={`${item._id || item.product?._id || idx}-${item.size}-${idx}`}
-                            className="flex items-center gap-3 rounded-xl border border-gray-200 p-3"
-                          >
-                            <img
-                              src={imageSrc}
-                              alt={title}
-                              className="size-14 rounded-lg bg-gray-50 object-cover"
-                              loading="lazy"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="line-clamp-1 text-sm font-semibold text-gray-900">
-                                {title}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                Qty {item.quantity}{" "}
-                                {item.size ? `· ${item.size}` : ""}{" "}
-                                {item.color ? `· ${item.color}` : ""}
-                              </p>
-                            </div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {formatCurrency(lineTotal)}
-                            </p>
-                          </div>
-                        );
-                      },
-                    )}
-                  </div>
-
-                  <aside className="h-fit rounded-xl bg-gray-50 p-4">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Summary
-                    </p>
-                    <div className="mt-3 space-y-2 text-sm text-gray-600">
-                      <div className="flex items-center justify-between">
-                        <span>Subtotal</span>
-                        <span>
-                          {formatCurrency(
-                            order.summary?.subtotal ?? order.subtotal,
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Shipping</span>
-                        <span>
-                          {formatCurrency(
-                            order.summary?.shipping ?? order.shipping,
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Tax</span>
-                        <span>
-                          {formatCurrency(order.summary?.tax ?? order.tax)}
-                        </span>
-                      </div>
-                      <div className="h-px bg-gray-200" />
-                      <div className="flex items-center justify-between font-semibold text-gray-900">
-                        <span>Total</span>
-                        <span>
-                          {formatCurrency(order.summary?.total ?? order.total)}
-                        </span>
-                      </div>
-                      <div className="pt-3 text-xs uppercase tracking-[0.18em] text-gray-500">
-                        Payment method:{" "}
-                        {humanPaymentMethod(order.paymentMethod)}
-                      </div>
-                    </div>
-                  </aside>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
+      <ReturnModal
+        order={returnOrder}
+        onClose={() => setReturnOrder(null)}
+      />
+    </div>
   );
 };
+
+/* ─── Local micro-components (page-level only) ────────────── */
+
+const ErrorState = ({ message }) => (
+  <div className="bg-white rounded-3xl p-12 text-center border border-red-200 my-8 max-w-xl mx-auto shadow-sm">
+    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+      <Package className="w-7 h-7 text-red-400" />
+    </div>
+    <h3 className="font-serif text-2xl text-[#1a1a1a] mb-2">
+      Unable to Load Orders
+    </h3>
+    <p className="text-xs text-black/60 max-w-sm mx-auto mb-6 leading-relaxed">
+      {message || "Please try again later."}
+    </p>
+    <button
+      onClick={() => window.location.reload()}
+      className="px-6 py-2.5 rounded-full bg-[#1a1a1a] text-white text-xs uppercase tracking-wider font-semibold hover:bg-black/80 transition-colors cursor-pointer"
+    >
+      Retry
+    </button>
+  </div>
+);
+
+const EmptyState = ({ hasOrders, hasActiveFilters, onReset }) => (
+  <div className="bg-white rounded-3xl p-12 text-center border border-black/10 my-8 max-w-xl mx-auto shadow-sm">
+    <div className="w-16 h-16 rounded-full bg-[#EBE8E3] flex items-center justify-center mx-auto mb-4">
+      <Package className="w-7 h-7 text-black/30" />
+    </div>
+    <h3 className="font-serif text-2xl text-[#1a1a1a] mb-2">
+      No Commissions Found
+    </h3>
+    <p className="text-xs text-black/60 max-w-sm mx-auto mb-6 leading-relaxed">
+      {hasOrders
+        ? "No orders match your current filters. Try clearing the search or changing the filter."
+        : "You haven't placed any orders yet. Explore the collection to get started."}
+    </p>
+    <div className="flex items-center justify-center gap-3 flex-wrap">
+      {hasActiveFilters && (
+        <button
+          onClick={onReset}
+          className="px-5 py-2.5 rounded-full border border-black/15 text-xs uppercase tracking-wider font-semibold text-[#1a1a1a] hover:bg-[#EBE8E3] transition-colors cursor-pointer"
+        >
+          Reset Filters
+        </button>
+      )}
+      <Link
+        to="/collection"
+        className="px-6 py-2.5 rounded-full bg-[#1a1a1a] text-white text-xs uppercase tracking-wider font-semibold hover:bg-black/80 transition-colors flex items-center gap-2"
+      >
+        <span>Shop Collection</span>
+        <ArrowUpRight className="w-3.5 h-3.5" />
+      </Link>
+    </div>
+  </div>
+);
 
 export default Orders;

@@ -10,10 +10,12 @@ import Product from "./pages/Product.jsx";
 import Cart from "./pages/Cart.jsx";
 import PlaceOrder from "./pages/PlaceOrder.jsx";
 import Orders from "./pages/Orders.jsx";
+import Profile from "./pages/Profile.jsx";
 import PaymentSuccess from "./pages/PaymentSuccess.jsx";
 import PaymentCancel from "./pages/PaymentCancel.jsx";
 import Login from "./pages/auth/Login.jsx";
 import SignUp from "./pages/auth/SignUp.jsx";
+import WishlistPage from "./pages/Wishlist.jsx";
 
 // Layout
 import Navbar from "./components/header/Navbar.jsx";
@@ -27,8 +29,10 @@ import CampaignVideoModal from "./components/home/CampaignVideoModal.jsx";
 import QuickViewModal from "./components/share/QuickViewModal.jsx";
 import CustomCursor from "./components/share/CustomCursor.jsx";
 
-// Wishlist state
+// Wishlist — selector-driven (no local state needed)
+import { useSelector } from "react-redux";
 import { useWishlist } from "./features/wishlist/useWishlist.js";
+import { selectWishlistCount } from "./features/wishlist/wishlistSelectors.js";
 
 // Smooth scroll
 import { useLenis } from "./hooks/useLenis.js";
@@ -46,7 +50,11 @@ const App = () => {
 
   // Wishlist drawer
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
-  const { wishlistIds, toggle: toggleWishlist, isInWishlist, count: wishlistCount } = useWishlist();
+
+  // Wishlist state — hook provides toggle/isInWishlist for prop-drilling,
+  // count comes directly from the Redux selector for the Navbar badge.
+  const { wishlistIds, toggle: toggleWishlist, isInWishlist } = useWishlist();
+  const wishlistCount = useSelector(selectWishlistCount);
 
   // Quick view modal
   const [quickViewProduct, setQuickViewProduct] = useState(null);
@@ -61,25 +69,32 @@ const App = () => {
 
       <main>
         <Routes>
-          <Route path="/" element={
-            <Home
-              onQuickView={setQuickViewProduct}
-              wishlistIds={wishlistIds}
-              onToggleWishlist={toggleWishlist}
-              isInWishlist={isInWishlist}
-            />
-          } />
-          <Route path="/collection" element={
-            <Collection
-              wishlistIds={wishlistIds}
-              onToggleWishlist={toggleWishlist}
-              onQuickView={setQuickViewProduct}
-            />
-          } />
+          <Route
+            path="/"
+            element={
+              <Home
+                onQuickView={setQuickViewProduct}
+                wishlistIds={wishlistIds}
+                onToggleWishlist={toggleWishlist}
+                isInWishlist={isInWishlist}
+              />
+            }
+          />
+          <Route
+            path="/collection"
+            element={
+              <Collection
+                wishlistIds={wishlistIds}
+                onToggleWishlist={toggleWishlist}
+                onQuickView={setQuickViewProduct}
+              />
+            }
+          />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/product/:id" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
           <Route
             path="/place-order"
             element={
@@ -96,6 +111,14 @@ const App = () => {
               </RequireAuth>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <RequireAuth>
+                <Profile />
+              </RequireAuth>
+            }
+          />
           <Route path="/success" element={<PaymentSuccess />} />
           <Route path="/cancel" element={<PaymentCancel />} />
           <Route path="/login" element={<Login />} />
@@ -108,11 +131,10 @@ const App = () => {
       {/* Global overlays */}
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
+      {/* WishlistDrawer is now self-contained — no wishlist props needed */}
       <WishlistDrawer
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
-        wishlistIds={wishlistIds}
-        onToggle={toggleWishlist}
       />
 
       <QuickViewModal
